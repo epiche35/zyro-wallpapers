@@ -21,20 +21,21 @@ import neonAvatarImg from './assets/Neon Anime Avatar_ Evolve in Blue.png';
 import stormboundImg from './assets/Stormbound Ember Halo.png';
 
 const defaultWallpapers = [
-  { id: 1, title: "Butterfly Anime Girl", category: "Anime", imageUrl: typeof butterflyImg === 'object' ? butterflyImg.default : butterflyImg, resolution: "4K", downloads: 1240, likes: 342, userName: "Zyro Official" },
-  { id: 2, title: "Crimson Devil Pirate", category: "Anime", imageUrl: typeof crimsonDevilImg === 'object' ? crimsonDevilImg.default : crimsonDevilImg, resolution: "4K", downloads: 850, likes: 215, userName: "Zyro Official" },
-  { id: 3, title: "Crimson Devil Supercar", category: "Cars", imageUrl: typeof supercarImg === 'object' ? supercarImg.default : supercarImg, resolution: "4K", downloads: 2300, likes: 512, userName: "Zyro Official" },
-  { id: 4, title: "Devil BMW in Smoke", category: "Cars", imageUrl: typeof devilBmwImg === 'object' ? devilBmwImg.default : devilBmwImg, resolution: "4K", downloads: 1420, likes: 389, userName: "Zyro Official" },
-  { id: 5, title: "Divine Ascent", category: "Fantasy", imageUrl: typeof divineAscentImg === 'object' ? divineAscentImg.default : divineAscentImg, resolution: "4K", downloads: 930, likes: 178, userName: "Zyro Official" },
-  { id: 6, title: "Midnight GT-R Dreams", category: "Cars", imageUrl: typeof midnightGtrImg === 'object' ? midnightGtrImg.default : midnightGtrImg, resolution: "4K", downloads: 3100, likes: 740, userName: "Zyro Official" },
-  { id: 7, title: "Misty Creeper Forest", category: "Nature", imageUrl: typeof mistyCreeperImg === 'object' ? mistyCreeperImg.default : mistyCreeperImg, resolution: "4K", downloads: 640, likes: 120, userName: "Zyro Official" },
-  { id: 8, title: "Neon Anime Avatar", category: "Anime", imageUrl: typeof neonAvatarImg === 'object' ? neonAvatarImg.default : neonAvatarImg, resolution: "4K", downloads: 1890, likes: 430, userName: "Zyro Official" },
-  { id: 9, title: "Stormbound Ember Halo", category: "Space", imageUrl: typeof stormboundImg === 'object' ? stormboundImg.default : stormboundImg, resolution: "4K", downloads: 1150, likes: 290, userName: "Zyro Official" },
+  { id: 1, title: "Butterfly Anime Girl", category: "Anime", deviceType: "Desktop", imageUrl: typeof butterflyImg === 'object' ? butterflyImg.default : butterflyImg, resolution: "4K", downloads: 1240, likes: 342, userName: "Zyro Official" },
+  { id: 2, title: "Crimson Devil Pirate", category: "Anime", deviceType: "Desktop", imageUrl: typeof crimsonDevilImg === 'object' ? crimsonDevilImg.default : crimsonDevilImg, resolution: "4K", downloads: 850, likes: 215, userName: "Zyro Official" },
+  { id: 3, title: "Crimson Devil Supercar", category: "Cars", deviceType: "Desktop", imageUrl: typeof supercarImg === 'object' ? supercarImg.default : supercarImg, resolution: "4K", downloads: 2300, likes: 512, userName: "Zyro Official" },
+  { id: 4, title: "Devil BMW in Smoke", category: "Cars", deviceType: "Desktop", imageUrl: typeof devilBmwImg === 'object' ? devilBmwImg.default : devilBmwImg, resolution: "4K", downloads: 1420, likes: 389, userName: "Zyro Official" },
+  { id: 5, title: "Divine Ascent", category: "Fantasy", deviceType: "Desktop", imageUrl: typeof divineAscentImg === 'object' ? divineAscentImg.default : divineAscentImg, resolution: "4K", downloads: 930, likes: 178, userName: "Zyro Official" },
+  { id: 6, title: "Midnight GT-R Dreams", category: "Cars", deviceType: "Desktop", imageUrl: typeof midnightGtrImg === 'object' ? midnightGtrImg.default : midnightGtrImg, resolution: "4K", downloads: 3100, likes: 740, userName: "Zyro Official" },
+  { id: 7, title: "Misty Creeper Forest", category: "Nature", deviceType: "Mobile", imageUrl: typeof mistyCreeperImg === 'object' ? mistyCreeperImg.default : mistyCreeperImg, resolution: "4K", downloads: 640, likes: 120, userName: "Zyro Official" },
+  { id: 8, title: "Neon Anime Avatar", category: "Anime", deviceType: "Mobile", imageUrl: typeof neonAvatarImg === 'object' ? neonAvatarImg.default : neonAvatarImg, resolution: "4K", downloads: 1890, likes: 430, userName: "Zyro Official" },
+  { id: 9, title: "Stormbound Ember Halo", category: "Space", deviceType: "Desktop", imageUrl: typeof stormboundImg === 'object' ? stormboundImg.default : stormboundImg, resolution: "4K", downloads: 1150, likes: 290, userName: "Zyro Official" },
 ];
 
 export default function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [deviceFilter, setDeviceFilter] = useState("All"); // "All", "Desktop", "Mobile"
   const [selectedUserId, setSelectedUserId] = useState(null); // Filter by uploader profile
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -143,9 +144,13 @@ export default function App() {
       wp.category === selectedCategory;
 
     const matchesUser = selectedUserId ? wp.userId === selectedUserId : true;
+    
+    const wpDevice = wp.deviceType || "Desktop";
+    const matchesDevice = deviceFilter === "All" ? true : wpDevice === deviceFilter;
+
     const matchesSearch = wp.title.toLowerCase().includes(searchTerm.toLowerCase());
     
-    return matchesCategory && matchesUser && matchesSearch;
+    return matchesCategory && matchesUser && matchesDevice && matchesSearch;
   });
 
   return (
@@ -181,7 +186,24 @@ export default function App() {
         </div>
       )}
 
-      <main className="container mx-auto px-4 py-8">
+      {/* Device Filter Bar */}
+      <div className="container mx-auto px-4 pt-4 flex items-center justify-center gap-2">
+        {["All", "Desktop", "Mobile"].map((device) => (
+          <button
+            key={device}
+            onClick={() => setDeviceFilter(device)}
+            className={`px-4 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer ${
+              deviceFilter === device
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-gray-900 text-gray-400 hover:text-white hover:bg-gray-800 border border-gray-800'
+            }`}
+          >
+            {device === "Desktop" ? "🖥️ Desktop" : device === "Mobile" ? "📱 Mobile" : "✨ All Devices"}
+          </button>
+        ))}
+      </div>
+
+      <main className="container mx-auto px-4 py-6">
         <WallpaperGrid 
           wallpapers={filteredWallpapers}
           likedIds={favorites}

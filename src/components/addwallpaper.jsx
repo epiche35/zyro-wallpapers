@@ -4,6 +4,7 @@ export default function AddWallpaperModal({ onClose, onAdd }) {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Anime');
   const [resolution, setResolution] = useState('4K');
+  const [deviceType, setDeviceType] = useState('Desktop');
   const [imageUrl, setImageUrl] = useState('');
   const [imagePreview, setImagePreview] = useState('');
   const [error, setError] = useState('');
@@ -41,6 +42,7 @@ export default function AddWallpaperModal({ onClose, onAdd }) {
       category,
       imageUrl: finalImage,
       resolution,
+      deviceType,
     });
   };
 
@@ -76,23 +78,37 @@ export default function AddWallpaperModal({ onClose, onAdd }) {
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Category</label>
-            <select 
-              value={category} 
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 cursor-pointer"
-            >
-              <option value="Anime">Anime</option>
-              <option value="Cars">Cars</option>
-              <option value="Gaming">Gaming</option>
-              <option value="AMOLED">AMOLED</option>
-              <option value="Aesthetic">Aesthetic</option>
-              <option value="Space">Space</option>
-              <option value="Minimal">Minimal</option>
-              <option value="Fantasy">Fantasy</option>
-              <option value="Nature">Nature</option>
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-400 mb-1">Category</label>
+              <select 
+                value={category} 
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+              >
+                <option value="Anime">Anime</option>
+                <option value="Cars">Cars</option>
+                <option value="Gaming">Gaming</option>
+                <option value="AMOLED">AMOLED</option>
+                <option value="Aesthetic">Aesthetic</option>
+                <option value="Space">Space</option>
+                <option value="Minimal">Minimal</option>
+                <option value="Fantasy">Fantasy</option>
+                <option value="Nature">Nature</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-400 mb-1">Target Device</label>
+              <select 
+                value={deviceType} 
+                onChange={(e) => setDeviceType(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+              >
+                <option value="Desktop">Desktop (PC)</option>
+                <option value="Mobile">Mobile (Phone)</option>
+              </select>
+            </div>
           </div>
 
           {/* Option 1: Upload from Device */}
