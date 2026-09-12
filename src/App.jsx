@@ -4,7 +4,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import Navbar from './components/Navbar';
 import WallpaperGrid from './components/WallpaperGrid';
-import AddWallpaperModal from './components/AddWallpaperModal';
+
 import ProfileMenuModal from './components/ProfileMenuModal';
 import WallpaperModal from './components/WallpaperModal';
 import LoginModal from './components/LoginModal';
