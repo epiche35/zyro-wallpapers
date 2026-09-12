@@ -33,6 +33,19 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [favorites, setFavorites] = useState([]);
 
+  // Wallpaper Items Array
+  const wallpapers = [
+    { id: 1, title: "Butterfly Anime Girl", category: "Anime", url: butterflyImg, resolution: "4K" },
+    { id: 2, title: "Crimson Devil Pirate", category: "Anime", url: crimsonDevilImg, resolution: "4K" },
+    { id: 3, title: "Crimson Devil Supercar", category: "Cars", url: supercarImg, resolution: "4K" },
+    { id: 4, title: "Devil BMW in Smoke", category: "Cars", url: devilBmwImg, resolution: "4K" },
+    { id: 5, title: "Divine Ascent", category: "Fantasy", url: divineAscentImg, resolution: "4K" },
+    { id: 6, title: "Midnight GT-R Dreams", category: "Cars", url: midnightGtrImg, resolution: "4K" },
+    { id: 7, title: "Misty Creeper Forest", category: "Nature", url: mistyCreeperImg, resolution: "4K" },
+    { id: 8, title: "Neon Anime Avatar", category: "Anime", url: neonAvatarImg, resolution: "4K" },
+    { id: 9, title: "Stormbound Ember Halo", category: "Space", url: stormboundImg, resolution: "4K" },
+  ];
+
   // Listen to Google Auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -104,6 +117,7 @@ export default function App() {
       
       <main className="container mx-auto px-4 py-8">
         <WallpaperGrid 
+          wallpapers={wallpapers}
           favorites={favorites}
           toggleFavorite={toggleFavorite}
           searchTerm={searchTerm}
