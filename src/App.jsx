@@ -9,7 +9,7 @@ import ProfileMenuModal from './components/ProfileMenuModal';
 import WallpaperModal from './components/WallpaperModal';
 import LoginModal from './components/LoginModal';
 
-// Importing assets
+// Importing assets with safe default handling for Vite bundler
 import heroImg from './assets/hero.png';
 import butterflyImg from './assets/Butterfly Bow Anime Girl Portrait.png';
 import crimsonDevilImg from './assets/Crimson Devil Pirate Wallpaper.png';
@@ -33,18 +33,29 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [favorites, setFavorites] = useState([]);
 
-  // Wallpaper Items Array
-  const wallpapers = [
-    { id: 1, title: "Butterfly Anime Girl", category: "Anime", url: butterflyImg, resolution: "4K" },
-    { id: 2, title: "Crimson Devil Pirate", category: "Anime", url: crimsonDevilImg, resolution: "4K" },
-    { id: 3, title: "Crimson Devil Supercar", category: "Cars", url: supercarImg, resolution: "4K" },
-    { id: 4, title: "Devil BMW in Smoke", category: "Cars", url: devilBmwImg, resolution: "4K" },
-    { id: 5, title: "Divine Ascent", category: "Fantasy", url: divineAscentImg, resolution: "4K" },
-    { id: 6, title: "Midnight GT-R Dreams", category: "Cars", url: midnightGtrImg, resolution: "4K" },
-    { id: 7, title: "Misty Creeper Forest", category: "Nature", url: mistyCreeperImg, resolution: "4K" },
-    { id: 8, title: "Neon Anime Avatar", category: "Anime", url: neonAvatarImg, resolution: "4K" },
-    { id: 9, title: "Stormbound Ember Halo", category: "Space", url: stormboundImg, resolution: "4K" },
-  ];
+  // Local state array for wallpapers
+  const [wallpapers, setWallpapers] = useState([
+    { id: 1, title: "Butterfly Anime Girl", category: "Anime", imageUrl: typeof butterflyImg === 'object' ? butterflyImg.default : butterflyImg, resolution: "4K", downloads: 1240, likes: 342 },
+    { id: 2, title: "Crimson Devil Pirate", category: "Anime", imageUrl: typeof crimsonDevilImg === 'object' ? crimsonDevilImg.default : crimsonDevilImg, resolution: "4K", downloads: 850, likes: 215 },
+    { id: 3, title: "Crimson Devil Supercar", category: "Cars", imageUrl: typeof supercarImg === 'object' ? supercarImg.default : supercarImg, resolution: "4K", downloads: 2300, likes: 512 },
+    { id: 4, title: "Devil BMW in Smoke", category: "Cars", imageUrl: typeof devilBmwImg === 'object' ? devilBmwImg.default : devilBmwImg, resolution: "4K", downloads: 1420, likes: 389 },
+    { id: 5, title: "Divine Ascent", category: "Fantasy", imageUrl: typeof divineAscentImg === 'object' ? divineAscentImg.default : divineAscentImg, resolution: "4K", downloads: 930, likes: 178 },
+    { id: 6, title: "Midnight GT-R Dreams", category: "Cars", imageUrl: typeof midnightGtrImg === 'object' ? midnightGtrImg.default : midnightGtrImg, resolution: "4K", downloads: 3100, likes: 740 },
+    { id: 7, title: "Misty Creeper Forest", category: "Nature", imageUrl: typeof mistyCreeperImg === 'object' ? mistyCreeperImg.default : mistyCreeperImg, resolution: "4K", downloads: 640, likes: 120 },
+    { id: 8, title: "Neon Anime Avatar", category: "Anime", imageUrl: typeof neonAvatarImg === 'object' ? neonAvatarImg.default : neonAvatarImg, resolution: "4K", downloads: 1890, likes: 430 },
+    { id: 9, title: "Stormbound Ember Halo", category: "Space", imageUrl: typeof stormboundImg === 'object' ? stormboundImg.default : stormboundImg, resolution: "4K", downloads: 1150, likes: 290 },
+  ]);
+
+  // Filter wallpapers based on search and category (including Favorites tab handling)
+  const filteredWallpapers = wallpapers.filter((wp) => {
+    const matchesCategory = 
+      selectedCategory === "All" ? true :
+      selectedCategory === "Favorites" ? favorites.includes(wp.id) :
+      wp.category === selectedCategory;
+
+    const matchesSearch = wp.title.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   // Listen to Google Auth state changes
   useEffect(() => {
@@ -59,7 +70,6 @@ export default function App() {
         if (userSnap.exists()) {
           setFavorites(userSnap.data().favorites || []);
         } else {
-          // Create user document if it doesn't exist yet
           await setDoc(userRef, { favorites: [] });
           setFavorites([]);
         }
@@ -97,6 +107,12 @@ export default function App() {
     setFavorites(updatedFavorites);
   };
 
+  // Add new wallpaper handler
+  const handleAddWallpaper = (newWallpaper) => {
+    setWallpapers([ { id: Date.now(), ...newWallpaper, downloads: 0, likes: 0 }, ...wallpapers ]);
+    setIsAddModalOpen(false);
+  };
+
   // Sign out handler
   const handleSignOut = async () => {
     try {
@@ -110,22 +126,43 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <Navbar 
-        user={user} 
-        setIsLoginModalOpen={setIsLoginModalOpen}
-        setIsProfileModalOpen={setIsProfileModalOpen}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        onOpenAddModal={() => setIsAddModalOpen(true)}
+        onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        onOpenLoginModal={() => setIsLoginModalOpen(true)}
+        user={user}
+        onLogout={handleSignOut}
       />
       
       <main className="container mx-auto px-4 py-8">
         <WallpaperGrid 
-          wallpapers={wallpapers}
-          favorites={favorites}
-          toggleFavorite={toggleFavorite}
-          searchTerm={searchTerm}
-          selectedCategory={selectedCategory}
+          wallpapers={filteredWallpapers}
+          likedIds={favorites}
+          onLike={toggleFavorite}
+          onSelectWallpaper={(wp) => setSelectedWallpaper(wp)}
         />
       </main>
 
       {/* Modals */}
+      {selectedWallpaper && (
+        <WallpaperModal 
+          wallpaper={selectedWallpaper} 
+          onClose={() => setSelectedWallpaper(null)}
+          isLiked={favorites.includes(selectedWallpaper.id)}
+          onLike={toggleFavorite}
+        />
+      )}
+
+      {isAddModalOpen && (
+        <AddWallpaperModal 
+          onClose={() => setIsAddModalOpen(false)}
+          onAdd={handleAddWallpaper}
+        />
+      )}
+
       {isLoginModalOpen && (
         <LoginModal onClose={() => setIsLoginModalOpen(false)} />
       )}

@@ -1,148 +1,92 @@
-import React, { useState, useEffect } from 'react';
-import { auth, db } from './firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import Navbar from './components/Navbar';
-import WallpaperGrid from './components/WallpaperGrid';
-import AddWallpaperModal from './components/addwallpaper';
-import ProfileMenuModal from './components/ProfileMenuModal';
-import WallpaperModal from './components/WallpaperModal';
-import LoginModal from './components/LoginModal';
+import React from 'react';
 
-// Importing assets
-import heroImg from './assets/hero.png';
-import butterflyImg from './assets/Butterfly Bow Anime Girl Portrait.png';
-import crimsonDevilImg from './assets/Crimson Devil Pirate Wallpaper.png';
-import supercarImg from './assets/Crimson Devil Supercar Poster.png';
-import devilBmwImg from './assets/Devil BMW in Crimson Smoke.png';
-import divineAscentImg from './assets/Divine ascent under swirling clouds.png';
-import midnightGtrImg from './assets/Midnight GT-R Dreams.png';
-import mistyCreeperImg from './assets/Misty Creeper Moonlit Forest Chair.png';
-import neonAvatarImg from './assets/Neon Anime Avatar_ Evolve in Blue.png';
-import stormboundImg from './assets/Stormbound Ember Halo.png';
-
-export default function App() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [selectedWallpaper, setSelectedWallpaper] = useState(null);
-
-  // Real Firebase User State
-  const [user, setUser] = useState(null);
-  const [favorites, setFavorites] = useState([]);
-
-  // Wallpaper Items Array matching WallpaperGrid props (imageUrl, downloads, likes)
-  const wallpapers = [
-    { id: 1, title: "Butterfly Anime Girl", category: "Anime", imageUrl: butterflyImg, resolution: "4K", downloads: 1240, likes: 342 },
-    { id: 2, title: "Crimson Devil Pirate", category: "Anime", imageUrl: crimsonDevilImg, resolution: "4K", downloads: 850, likes: 215 },
-    { id: 3, title: "Crimson Devil Supercar", category: "Cars", imageUrl: supercarImg, resolution: "4K", downloads: 2300, likes: 512 },
-    { id: 4, title: "Devil BMW in Smoke", category: "Cars", imageUrl: devilBmwImg, resolution: "4K", downloads: 1420, likes: 389 },
-    { id: 5, title: "Divine Ascent", category: "Fantasy", imageUrl: divineAscentImg, resolution: "4K", downloads: 930, likes: 178 },
-    { id: 6, title: "Midnight GT-R Dreams", category: "Cars", imageUrl: midnightGtrImg, resolution: "4K", downloads: 3100, likes: 740 },
-    { id: 7, title: "Misty Creeper Forest", category: "Nature", imageUrl: mistyCreeperImg, resolution: "4K", downloads: 640, likes: 120 },
-    { id: 8, title: "Neon Anime Avatar", category: "Anime", imageUrl: neonAvatarImg, resolution: "4K", downloads: 1890, likes: 430 },
-    { id: 9, title: "Stormbound Ember Halo", category: "Space", imageUrl: stormboundImg, resolution: "4K", downloads: 1150, likes: 290 },
-  ];
-
-  // Filter wallpapers based on search and category
-  const filteredWallpapers = wallpapers.filter((wp) => {
-    const matchesCategory = selectedCategory === "All" || wp.category === selectedCategory;
-    const matchesSearch = wp.title.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  // Listen to Google Auth state changes
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        
-        // Fetch user favorites from Firestore
-        const userRef = doc(db, "users", currentUser.uid);
-        const userSnap = await getDoc(userRef);
-
-        if (userSnap.exists()) {
-          setFavorites(userSnap.data().favorites || []);
-        } else {
-          await setDoc(userRef, { favorites: [] });
-          setFavorites([]);
-        }
-      } else {
-        setUser(null);
-        setFavorites([]);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // Toggle Favorite handler with Firestore sync
-  const toggleFavorite = async (wallpaperId) => {
-    if (!user) {
-      setIsLoginModalOpen(true);
-      return;
-    }
-
-    const userRef = doc(db, "users", user.uid);
-    let updatedFavorites;
-
-    if (favorites.includes(wallpaperId)) {
-      updatedFavorites = favorites.filter(id => id !== wallpaperId);
-      await updateDoc(userRef, {
-        favorites: arrayRemove(wallpaperId)
-      });
-    } else {
-      updatedFavorites = [...favorites, wallpaperId];
-      await updateDoc(userRef, {
-        favorites: arrayUnion(wallpaperId)
-      });
-    }
-
-    setFavorites(updatedFavorites);
-  };
-
-  // Sign out handler
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      setIsProfileModalOpen(false);
-    } catch (error) {
-      console.error("Error signing out: ", error);
-    }
-  };
+export default function WallpaperGrid({ wallpapers, onSelectWallpaper, likedIds = [], onLike }) {
+  if (!wallpapers || wallpapers.length === 0) {
+    return (
+      <div className="text-center py-16 text-gray-400">
+        <p className="text-lg">No wallpapers found matching your search or filter.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <Navbar 
-        user={user} 
-        setIsLoginModalOpen={setIsLoginModalOpen}
-        setIsProfileModalOpen={setIsProfileModalOpen}
-      />
-      
-      <main className="container mx-auto px-4 py-8">
-        <WallpaperGrid 
-          wallpapers={filteredWallpapers}
-          likedIds={favorites}
-          onLike={toggleFavorite}
-          onSelectWallpaper={(wp) => setSelectedWallpaper(wp)}
-        />
-      </main>
+    <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 [column-fill:_balance]">
+      {wallpapers.map((wp) => {
+        const isLiked = Array.isArray(likedIds) && likedIds.includes(wp.id);
 
-      {/* Modals */}
-      {isLoginModalOpen && (
-        <LoginModal onClose={() => setIsLoginModalOpen(false)} />
-      )}
+        return (
+          <div 
+            key={wp.id} 
+            onClick={() => onSelectWallpaper(wp)}
+            className="mb-6 break-inside-avoid bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-xl hover:border-gray-700 transition group cursor-pointer relative block"
+          >
+            {/* Image Container */}
+            <div className="relative w-full bg-gray-800 overflow-hidden">
+              <img
+                src={wp.imageUrl}
+                alt={wp.title}
+                className="w-full h-auto block object-cover group-hover:scale-105 transition duration-500 ease-out"
+                onError={(e) => {
+                  // Fallback if local asset path fails to load
+                  e.target.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop";
+                }}
+              />
+              
+              {/* Dark Gradient Overlay on Hover */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-4">
+                
+                {/* Top quick badges */}
+                <div className="flex justify-between items-center">
+                  <span className="bg-black/60 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-full font-medium">
+                    {wp.resolution}
+                  </span>
+                  
+                  {/* Quick Favorite Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // prevent opening modal
+                      onLike(wp.id);
+                    }}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md transition ${
+                      isLiked ? 'bg-pink-600 text-white' : 'bg-black/60 text-gray-300 hover:text-white'
+                    }`}
+                  >
+                    {isLiked ? '❤️' : '♡'}
+                  </button>
+                </div>
 
-      {isProfileModalOpen && user && (
-        <ProfileMenuModal 
-          user={user} 
-          isOpen={isProfileModalOpen}
-          onClose={() => setIsProfileModalOpen(false)} 
-          onSignOut={handleSignOut}
-        />
-      )}
+                {/* Bottom quick title & download hint */}
+                <div className="flex items-end justify-between">
+                  <div>
+                    <h3 className="text-white font-semibold text-sm truncate max-w-[200px]">{wp.title}</h3>
+                    <p className="text-xs text-gray-300">{wp.category}</p>
+                  </div>
+                  <span className="bg-blue-600/90 text-white text-xs px-3 py-1.5 rounded-xl font-medium shadow-lg flex items-center gap-1">
+                    ↓ {wp.downloads}
+                  </span>
+                </div>
+              </div>
+
+              {/* Default category tag when not hovering */}
+              <span className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-full font-medium group-hover:opacity-0 transition-opacity pointer-events-none">
+                {wp.category}
+              </span>
+            </div>
+
+            {/* Bottom details card info */}
+            <div className="p-4 flex items-center justify-between bg-gray-900">
+              <div>
+                <h3 className="text-white font-semibold text-sm truncate max-w-[180px]">{wp.title}</h3>
+                <p className="text-xs text-gray-400 mt-0.5">{wp.resolution}</p>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-gray-400 font-medium">
+                <span className="flex items-center gap-1">❤️ {wp.likes}</span>
+                <span className="flex items-center gap-1">⬇️ {wp.downloads}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
