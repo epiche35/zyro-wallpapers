@@ -4,77 +4,153 @@ import WallpaperGrid from './components/WallpaperGrid';
 import AddWallpaperModal from './components/AddWallpaperModal';
 import ProfileMenuModal from './components/ProfileMenuModal';
 
-// Importing your exact files from assets
-import avatarImg from './assets/Neon Anime Avatar_ Evolve in Blue.png';
-import bmwImg from './assets/Devil BMW in Crimson Smoke.png';
-import pirateImg from './assets/Crimson Devil Pirate Wallpaper.png';
-import moonlitImg from './assets/hero.png';
-import emberImg from './assets/Stormbound Ember Halo.png';
-import ascentImg from './assets/Divine ascent under swirling clouds.png';
+// Importing exact assets from your folder
+import heroImg from './assets/hero.png';
+import butterflyImg from './assets/Butterfly Bow Anime Girl Portrait.png';
+import crimsonDevilImg from './assets/Crimson Devil Pirate Wallpaper.png';
 import supercarImg from './assets/Crimson Devil Supercar Poster.png';
-import gtrImg from './assets/Midnight GT-R Dreams.png';
-import animeGirlImg from './assets/Butterfly Bow Anime Girl Portrait.png';
-import creeperImg from './assets/Misty Creeper Moonlit Forest Chair.png';
+import devilBmwImg from './assets/Devil BMW in Crimson Smoke.png';
+import divineAscentImg from './assets/Divine ascent under swirling clouds.png';
+import midnightGtrImg from './assets/Midnight GT-R Dreams.png';
+import mistyCreeperImg from './assets/Misty Creeper Moonlit Forest Chair.png';
+import neonAvatarImg from './assets/Neon Anime Avatar_ Evolve in Blue.png';
+import stormboundImg from './assets/Stormbound Ember Halo.png';
 
 export default function App() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  // Mock user state for Profile Menu
   const [user, setUser] = useState({
-    displayName: "Zyro",
+    displayName: "Zyro User",
     email: "zyro@wallpapers.com",
-    photoURL: avatarImg,
+    photoURL: neonAvatarImg
   });
 
+  // Initial Wallpapers Array mapped to local assets
   const [wallpapers, setWallpapers] = useState([
-    { id: 1, name: "Devil BMW M4", category: "Cars", url: bmwImg },
-    { id: 2, name: "Crimson Devil Pirate", category: "Anime", url: pirateImg },
-    { id: 3, name: "Moonlit Cliff", category: "Aesthetic", url: moonlitImg },
-    { id: 4, name: "Stormbound Ember Halo", category: "Gaming", url: emberImg },
-    { id: 5, name: "Divine Ascent", category: "4K", url: ascentImg },
-    { id: 6, name: "Crimson Supercar Poster", category: "Cars", url: supercarImg },
-    { id: 7, name: "Midnight GT-R Dreams", category: "Cars", url: gtrImg },
-    { id: 8, name: "Butterfly Bow Anime", category: "Anime", url: animeGirlImg },
-    { id: 9, name: "Misty Creeper Forest", category: "Gaming", url: creeperImg },
+    {
+      id: 1,
+      title: "Heroic Cliff Edge",
+      category: "Anime",
+      imageUrl: heroImg,
+      downloads: "1.2k",
+      likes: "342"
+    },
+    {
+      id: 2,
+      title: "Butterfly Bow Anime Portrait",
+      category: "Anime",
+      imageUrl: butterflyImg,
+      downloads: "2.4k",
+      likes: "512"
+    },
+    {
+      id: 3,
+      title: "Crimson Devil Pirate",
+      category: "Fantasy",
+      imageUrl: crimsonDevilImg,
+      downloads: "3.1k",
+      likes: "890"
+    },
+    {
+      id: 4,
+      title: "Crimson Supercar Poster",
+      category: "Cars",
+      imageUrl: supercarImg,
+      downloads: "4.5k",
+      likes: "1.1k"
+    },
+    {
+      id: 5,
+      title: "Devil BMW in Smoke",
+      category: "Cars",
+      imageUrl: devilBmwImg,
+      downloads: "1.9k",
+      likes: "430"
+    },
+    {
+      id: 6,
+      title: "Divine Ascent Clouds",
+      category: "Nature",
+      imageUrl: divineAscentImg,
+      downloads: "850",
+      likes: "210"
+    },
+    {
+      id: 7,
+      title: "Midnight GT-R Dreams",
+      category: "Cars",
+      imageUrl: midnightGtrImg,
+      downloads: "5.2k",
+      likes: "1.4k"
+    },
+    {
+      id: 8,
+      title: "Misty Moonlit Forest",
+      category: "Nature",
+      imageUrl: mistyCreeperImg,
+      downloads: "920",
+      likes: "315"
+    },
+    {
+      id: 9,
+      title: "Stormbound Ember Halo",
+      category: "Fantasy",
+      imageUrl: stormboundImg,
+      downloads: "3.8k",
+      likes: "950"
+    }
   ]);
 
-  const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  // Filter wallpapers based on search and category
+  const filteredWallpapers = wallpapers.filter((wp) => {
+    const matchesSearch = wp.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === "All" || wp.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   const handleAddWallpaper = (newWallpaper) => {
-    setWallpapers([newWallpaper, ...wallpapers]);
+    setWallpapers([
+      { id: wallpapers.length + 1, downloads: "0", likes: "0", ...newWallpaper },
+      ...wallpapers
+    ]);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    alert("Signed out successfully!");
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white relative">
+    <div className="min-h-screen bg-gray-950 text-white font-sans selection:bg-blue-500 selection:text-white">
       <Navbar 
-        user={user} 
-        onOpenAuthModal={() => setIsProfileOpen(true)} 
-      />
-
-      <ProfileMenuModal
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
+        searchTerm={searchTerm} 
+        setSearchTerm={setSearchTerm}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        onOpenAddModal={() => setIsAddModalOpen(true)}
+        onOpenProfileModal={() => setIsProfileModalOpen(true)}
         user={user}
-        onLogout={() => setUser(null)}
       />
 
-      <div className="max-w-7xl mx-auto px-6 py-8 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Zyro Wallpapers</h1>
-          <p className="text-xs text-gray-400 mt-1">Same dreams, bigger moves.</p>
-        </div>
-        <button
-          onClick={() => setIsUploadOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-lg"
-        >
-          + Upload Wallpaper
-        </button>
-      </div>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <WallpaperGrid wallpapers={filteredWallpapers} />
+      </main>
 
-      <WallpaperGrid wallpapers={wallpapers} />
+      <AddWallpaperModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)}
+        onAdd={handleAddWallpaper}
+      />
 
-      <AddWallpaperModal
-        isOpen={isUploadOpen}
-        onClose={() => setIsUploadOpen(false)}
-        onAddWallpaper={handleAddWallpaper}
+      <ProfileMenuModal 
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        user={user}
+        onLogout={handleLogout}
       />
     </div>
   );

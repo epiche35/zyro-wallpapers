@@ -1,42 +1,76 @@
-import React, { useState } from 'react';
-import { Sun, Moon, Image, User } from 'lucide-react';
-import { useTheme } from '../ThemeContext';
-import AuthModal from './AuthModal';
+import React from 'react';
 
-export default function Navbar() {
-  const { darkMode, toggleTheme } = useTheme();
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
+export default function Navbar({
+  searchTerm,
+  setSearchTerm,
+  selectedCategory,
+  setSelectedCategory,
+  onOpenAddModal,
+  onOpenProfileModal,
+  user
+}) {
+  const categories = ["All", "Anime", "Cars", "Fantasy", "Nature"];
 
   return (
-    <>
-      <nav className="sticky top-0 z-40 glass-card bg-slate-900/40 backdrop-blur-md border-b border-white/10 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Image className="h-7 w-7 text-neonCyan" />
-          <span className="text-xl font-bold bg-gradient-to-r from-neonCyan via-neonPurple to-neonPink bg-clip-text text-transparent">
-            Zyro Wallpapers
+    <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+        
+        {/* Logo / Brand */}
+        <div className="flex items-center gap-2">
+          <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
+            ZyroWallpapers
           </span>
         </div>
 
-        <div className="flex items-center space-x-4">
+        {/* Search Bar */}
+        <div className="w-full md:w-96">
+          <input
+            type="text"
+            placeholder="Search wallpapers..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+
+        {/* Actions & Profile */}
+        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
           <button
-            onClick={toggleTheme}
-            className="p-2 rounded-xl glass-card hover:bg-white/10 text-slate-200 transition-colors"
-            aria-label="Toggle Theme"
+            onClick={onOpenAddModal}
+            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer"
           >
-            {darkMode ? <Sun className="h-5 w-5 text-neonCyan" /> : <Moon className="h-5 w-5 text-neonPurple" />}
+            + Add Wallpaper
           </button>
 
-          <button 
-            onClick={() => setIsAuthOpen(true)}
-            className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-gradient-to-r from-neonCyan to-neonPurple text-slate-950 font-semibold hover:opacity-90 transition-opacity"
+          <button
+            onClick={onOpenProfileModal}
+            className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 p-1.5 rounded-full border border-gray-700 transition cursor-pointer"
           >
-            <User className="h-4 w-4" />
-            <span>Sign In</span>
+            <img
+              src={user?.photoURL || "https://via.placeholder.com/40"}
+              alt="Profile"
+              className="w-8 h-8 rounded-full object-cover"
+            />
           </button>
         </div>
-      </nav>
+      </div>
 
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
-    </>
+      {/* Categories Filter Bar */}
+      <div className="max-w-7xl mx-auto px-4 pb-3 flex items-center gap-2 overflow-x-auto">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition cursor-pointer ${
+              selectedCategory === cat
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+    </header>
   );
 }

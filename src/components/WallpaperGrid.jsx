@@ -1,72 +1,46 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-export default function WallpaperGrid({ wallpapers = [] }) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-
-  // List of category options matching your roadmap
-  const categories = ["All", "Anime", "Cars", "Gaming", "Aesthetic", "AMOLED", "4K", "Minimal"];
-
-  // Filter wallpapers by search keyword and selected category
-  const filteredWallpapers = wallpapers.filter((wallpaper) => {
-    const matchesSearch = 
-      wallpaper.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      wallpaper.category?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = 
-      selectedCategory === "All" || wallpaper.category === selectedCategory;
-
-    return matchesSearch && matchesCategory;
-  });
+export default function WallpaperGrid({ wallpapers }) {
+  if (!wallpapers || wallpapers.length === 0) {
+    return (
+      <div className="text-center py-16 text-gray-400">
+        <p className="text-lg">No wallpapers found matching your search.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4 max-w-7xl mx-auto">
-      {/* Search Bar Input */}
-      <div className="mb-6 flex justify-center">
-        <input
-          type="text"
-          placeholder="Search wallpapers (e.g., Anime, Gojo, 4K)..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full max-w-md px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-700"
-        />
-      </div>
-
-      {/* Category Filter Pills */}
-      <div className="flex overflow-x-auto space-x-2 pb-4 mb-6 scrollbar-none justify-start md:justify-center">
-        {categories.map((category) => (
-          <button
-            key={category}
-            onClick={() => setSelectedCategory(category)}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              selectedCategory === category
-                ? 'bg-blue-600 text-white shadow'
-                : 'bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
-            }`}
-          >
-            {category}
-          </button>
-        ))}
-      </div>
-
-      {/* Wallpaper Grid Display */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {filteredWallpapers.length > 0 ? (
-          filteredWallpapers.map((wallpaper, index) => (
-            <div key={index} className="bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow border dark:border-gray-800">
-              <img src={wallpaper.url} alt={wallpaper.name} className="w-full h-48 object-cover" />
-              <div className="p-3">
-                <div className="text-sm font-semibold truncate dark:text-white">{wallpaper.name}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{wallpaper.category}</div>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-10 text-gray-500 dark:text-gray-400">
-            No wallpapers found matching your filter.
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {wallpapers.map((wp) => (
+        <div 
+          key={wp.id} 
+          className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-xl hover:border-gray-700 transition group"
+        >
+          {/* Image Container */}
+          <div className="relative aspect-[16/10] overflow-hidden bg-gray-800">
+            <img
+              src={wp.imageUrl}
+              alt={wp.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+            />
+            <span className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-xs px-2.5 py-1 rounded-full font-medium">
+              {wp.category}
+            </span>
           </div>
-        )}
-      </div>
+
+          {/* Details & Stats */}
+          <div className="p-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-white font-semibold text-sm truncate max-w-[200px]">{wp.title}</h3>
+              <p className="text-xs text-gray-400 mt-0.5">High Resolution</p>
+            </div>
+            <div className="flex items-center gap-3 text-xs text-gray-400 font-medium">
+              <span className="flex items-center gap-1">❤️ {wp.likes}</span>
+              <span className="flex items-center gap-1">⬇️ {wp.downloads}</span>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
