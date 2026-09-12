@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import Navbar from './components/Navbar';
 import WallpaperGrid from './components/WallpaperGrid';
 import AddWallpaperModal from './components/addwallpaper';
@@ -42,25 +42,23 @@ export default function App() {
 
   const [user, setUser] = useState(null);
   const [favorites, setFavorites] = useState([]);
-  const [wallpapers, setWallpapers] = useState(defaultWallpapers);
 
-  // Fetch wallpapers and user session on load
-  useEffect(() => {
-    const fetchWallpapers = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "wallpapers"));
-        if (!querySnapshot.empty) {
-          const fetchedWps = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          // Combine default wallpapers with custom uploaded ones from Firestore
-          setWallpapers([...fetchedWps, ...defaultWallpapers]);
-        }
-      } catch (err) {
-        console.error("Error fetching wallpapers from Firestore:", err);
+  // Load wallpapers from localStorage combined with default ones
+  const [wallpapers, setWallpapers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('zyro_custom_wallpapers');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return [...parsed, ...defaultWallpapers];
       }
-    };
+    } catch (e) {
+      console.error("Failed to load local wallpapers", e);
+    }
+    return defaultWallpapers;
+  });
 
-    fetchWallpapers();
-
+  // Fetch user favorites session on load
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
@@ -82,24 +80,24 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Add new wallpaper and save it directly to Firestore
-  const handleAddWallpaper = async (newWallpaper) => {
-    try {
-      const wallpaperData = {
-        ...newWallpaper,
-        downloads: 0,
-        likes: 0,
-        createdAt: Date.now()
-      };
+  // Add new wallpaper, close modal immediately, and save to localStorage
+  const handleAddWallpaper = (newWallpaper) => {
+    setIsAddModalOpen(false); // Closes popup window instantly
 
-      const docRef = await addDoc(collection(db, "wallpapers"), wallpaperData);
-      
-      // Update state immediately so it appears on screen without refresh
-      setWallpapers([{ id: docRef.id, ...wallpaperData }, ...wallpapers]);
-      setIsAddModalOpen(false);
-    } catch (error) {
-      console.error("Error adding wallpaper to Firestore: ", error);
-    }
+    const wallpaperData = {
+      id: Date.now(),
+      ...newWallpaper,
+      downloads: 0,
+      likes: 0
+    };
+
+    setWallpapers(prev => {
+      const updated = [wallpaperData, ...prev];
+      // Filter out default wallpapers before saving custom ones to localStorage
+      const customOnly = updated.filter(w => !defaultWallpapers.some(dw => dw.id === w.id));
+      localStorage.setItem('zyro_custom_wallpapers', JSON.stringify(customOnly));
+      return updated;
+    });
   };
 
   const toggleFavorite = async (wallpaperId) => {
