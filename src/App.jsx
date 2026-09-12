@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { auth, db } from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import Navbar from './components/Navbar';
 import WallpaperGrid from './components/WallpaperGrid';
-import AddWallpaperModal from './components/AddWallpaperModal';
+import AddWallpaperModal from './components/Addwallpapermodal';
 import ProfileMenuModal from './components/ProfileMenuModal';
 import WallpaperModal from './components/WallpaperModal';
+import LoginModal from './components/LoginModal';
 
 // Importing assets
 import heroImg from './assets/hero.png';
@@ -22,119 +26,87 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [selectedWallpaper, setSelectedWallpaper] = useState(null);
-  
-  // Track liked wallpaper IDs for the Favorites tab
-  const [likedIds, setLikedIds] = useState([]);
 
-  const [user, setUser] = useState({
-    displayName: "Zyro User",
-    email: "zyro@wallpapers.com",
-    photoURL: neonAvatarImg
-  });
+  // Real Firebase User State
+  const [user, setUser] = useState(null);
+  const [favorites, setFavorites] = useState([]);
 
-  const [wallpapers, setWallpapers] = useState([
-    { id: 1, title: "Heroic Cliff Edge", category: "Anime", imageUrl: heroImg, downloads: "1.2k", likes: "342" },
-    { id: 2, title: "Butterfly Bow Anime Portrait", category: "Anime", imageUrl: butterflyImg, downloads: "2.4k", likes: "512" },
-    { id: 3, title: "Crimson Devil Pirate", category: "Fantasy", imageUrl: crimsonDevilImg, downloads: "3.1k", likes: "890" },
-    { id: 4, title: "Crimson Supercar Poster", category: "Cars", imageUrl: supercarImg, downloads: "4.5k", likes: "1.1k" },
-    { id: 5, title: "Devil BMW in Smoke", category: "Cars", imageUrl: devilBmwImg, downloads: "1.9k", likes: "430" },
-    { id: 6, title: "Divine Ascent Clouds", category: "Nature", imageUrl: divineAscentImg, downloads: "850", likes: "210" },
-    { id: 7, title: "Midnight GT-R Dreams", category: "Cars", imageUrl: midnightGtrImg, downloads: "5.2k", likes: "1.4k" },
-    { id: 8, title: "Misty Moonlit Forest", category: "Nature", imageUrl: mistyCreeperImg, downloads: "920", likes: "315" },
-    { id: 9, title: "Stormbound Ember Halo", category: "Fantasy", imageUrl: stormboundImg, downloads: "3.8k", likes: "950" }
-  ]);
+  // Listen to Google Auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        
+        // Fetch user favorites from Firestore
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userRef);
 
-  // Updated filter to handle the "Favorites" tab selection
-  const filteredWallpapers = wallpapers.filter((wp) => {
-    const matchesSearch = wp.title.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    if (selectedCategory === "Favorites") {
-      return matchesSearch && likedIds.includes(wp.id);
+        if (userSnap.exists()) {
+          setFavorites(userSnap.data().favorites || []);
+        } else {
+          // Create user document if it doesn't exist yet
+          await setDoc(userRef, { favorites: [] });
+          setFavorites([]);
+        }
+      } else {
+        setUser(null);
+        setFavorites([]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Toggle Favorite handler with Firestore sync
+  const toggleFavorite = async (wallpaperId) => {
+    if (!user) {
+      setIsLoginModalOpen(true);
+      return;
     }
 
-    const matchesCategory = selectedCategory === "All" || wp.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+    const userRef = doc(db, "users", user.uid);
+    let updatedFavorites;
 
-  const handleAddWallpaper = (newWallpaper) => {
-    setWallpapers([
-      { id: wallpapers.length + 1, downloads: "0", likes: "0", ...newWallpaper },
-      ...wallpapers
-    ]);
-  };
-
-  const handleLike = (id) => {
-    setWallpapers(wallpapers.map(wp => {
-      if (wp.id === id) {
-        const currentLikes = parseInt(wp.likes.replace('k', '000')) || 100;
-        return { ...wp, likes: (currentLikes + 1).toLocaleString() };
-      }
-      return wp;
-    }));
-
-    // Add to liked IDs list if not already liked
-    if (!likedIds.includes(id)) {
-      setLikedIds([...likedIds, id]);
+    if (favorites.includes(wallpaperId)) {
+      updatedFavorites = favorites.filter(id => id !== wallpaperId);
+      await updateDoc(userRef, {
+        favorites: arrayRemove(wallpaperId)
+      });
+    } else {
+      updatedFavorites = [...favorites, wallpaperId];
+      await updateDoc(userRef, {
+        favorites: arrayUnion(wallpaperId)
+      });
     }
 
-    setSelectedWallpaper(prev => prev ? { ...prev, likes: (parseInt(prev.likes.replace('k', '000')) + 1).toLocaleString() } : null);
-  };
-
-  const handleDownload = (id) => {
-    setWallpapers(wallpapers.map(wp => {
-      if (wp.id === id) {
-        const currentDownloads = parseInt(wp.downloads.replace('k', '000')) || 100;
-        return { ...wp, downloads: (currentDownloads + 1).toLocaleString() };
-      }
-      return wp;
-    }));
-    setSelectedWallpaper(prev => prev ? { ...prev, downloads: (parseInt(prev.downloads.replace('k', '000')) + 1).toLocaleString() } : null);
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    alert("Signed out successfully!");
+    setFavorites(updatedFavorites);
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white font-sans selection:bg-blue-500 selection:text-white">
+    <div className="min-h-screen bg-slate-950 text-white">
       <Navbar 
-        searchTerm={searchTerm} 
-        setSearchTerm={setSearchTerm}
-        selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
-        onOpenAddModal={() => setIsAddModalOpen(true)}
-        onOpenProfileModal={() => setIsProfileModalOpen(true)}
-        user={user}
+        user={user} 
+        setIsLoginModalOpen={setIsLoginModalOpen}
+        setIsProfileModalOpen={setIsProfileModalOpen}
       />
-
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      
+      <main className="container mx-auto px-4 py-8">
         <WallpaperGrid 
-          wallpapers={filteredWallpapers} 
-          onSelectWallpaper={(wp) => setSelectedWallpaper(wp)} 
+          favorites={favorites}
+          toggleFavorite={toggleFavorite}
+          searchTerm={searchTerm}
+          selectedCategory={selectedCategory}
         />
       </main>
 
-      <AddWallpaperModal 
-        isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddWallpaper}
-      />
+      {/* Modals */}
+      {isLoginModalOpen && (
+        <LoginModal onClose={() => setIsLoginModalOpen(false)} />
+      )}
 
-      <ProfileMenuModal 
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-        user={user}
-        onLogout={handleLogout}
-      />
-
-      <WallpaperModal 
-        wallpaper={selectedWallpaper}
-        onClose={() => setSelectedWallpaper(null)}
-        onLike={handleLike}
-        onDownload={handleDownload}
-      />
+      {/* Other custom modals will go here */}
     </div>
   );
 }
