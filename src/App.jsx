@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, addDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import Navbar from './components/Navbar';
 import WallpaperGrid from './components/WallpaperGrid';
 import AddWallpaperModal from './components/addwallpaper';
@@ -9,8 +9,7 @@ import ProfileMenuModal from './components/ProfileMenuModal';
 import WallpaperModal from './components/WallpaperModal';
 import LoginModal from './components/LoginModal';
 
-// Importing assets with safe default handling for Vite bundler
-import heroImg from './assets/hero.png';
+// Importing default fallback assets
 import butterflyImg from './assets/Butterfly Bow Anime Girl Portrait.png';
 import crimsonDevilImg from './assets/Crimson Devil Pirate Wallpaper.png';
 import supercarImg from './assets/Crimson Devil Supercar Poster.png';
@@ -21,6 +20,18 @@ import mistyCreeperImg from './assets/Misty Creeper Moonlit Forest Chair.png';
 import neonAvatarImg from './assets/Neon Anime Avatar_ Evolve in Blue.png';
 import stormboundImg from './assets/Stormbound Ember Halo.png';
 
+const defaultWallpapers = [
+  { id: 1, title: "Butterfly Anime Girl", category: "Anime", imageUrl: typeof butterflyImg === 'object' ? butterflyImg.default : butterflyImg, resolution: "4K", downloads: 1240, likes: 342 },
+  { id: 2, title: "Crimson Devil Pirate", category: "Anime", imageUrl: typeof crimsonDevilImg === 'object' ? crimsonDevilImg.default : crimsonDevilImg, resolution: "4K", downloads: 850, likes: 215 },
+  { id: 3, title: "Crimson Devil Supercar", category: "Cars", imageUrl: typeof supercarImg === 'object' ? supercarImg.default : supercarImg, resolution: "4K", downloads: 2300, likes: 512 },
+  { id: 4, title: "Devil BMW in Smoke", category: "Cars", imageUrl: typeof devilBmwImg === 'object' ? devilBmwImg.default : devilBmwImg, resolution: "4K", downloads: 1420, likes: 389 },
+  { id: 5, title: "Divine Ascent", category: "Fantasy", imageUrl: typeof divineAscentImg === 'object' ? divineAscentImg.default : divineAscentImg, resolution: "4K", downloads: 930, likes: 178 },
+  { id: 6, title: "Midnight GT-R Dreams", category: "Cars", imageUrl: typeof midnightGtrImg === 'object' ? midnightGtrImg.default : midnightGtrImg, resolution: "4K", downloads: 3100, likes: 740 },
+  { id: 7, title: "Misty Creeper Forest", category: "Nature", imageUrl: typeof mistyCreeperImg === 'object' ? mistyCreeperImg.default : mistyCreeperImg, resolution: "4K", downloads: 640, likes: 120 },
+  { id: 8, title: "Neon Anime Avatar", category: "Anime", imageUrl: typeof neonAvatarImg === 'object' ? neonAvatarImg.default : neonAvatarImg, resolution: "4K", downloads: 1890, likes: 430 },
+  { id: 9, title: "Stormbound Ember Halo", category: "Space", imageUrl: typeof stormboundImg === 'object' ? stormboundImg.default : stormboundImg, resolution: "4K", downloads: 1150, likes: 290 },
+];
+
 export default function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -29,41 +40,30 @@ export default function App() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [selectedWallpaper, setSelectedWallpaper] = useState(null);
 
-  // Real Firebase User State
   const [user, setUser] = useState(null);
   const [favorites, setFavorites] = useState([]);
+  const [wallpapers, setWallpapers] = useState(defaultWallpapers);
 
-  // Local state array for wallpapers
-  const [wallpapers, setWallpapers] = useState([
-    { id: 1, title: "Butterfly Anime Girl", category: "Anime", imageUrl: typeof butterflyImg === 'object' ? butterflyImg.default : butterflyImg, resolution: "4K", downloads: 1240, likes: 342 },
-    { id: 2, title: "Crimson Devil Pirate", category: "Anime", imageUrl: typeof crimsonDevilImg === 'object' ? crimsonDevilImg.default : crimsonDevilImg, resolution: "4K", downloads: 850, likes: 215 },
-    { id: 3, title: "Crimson Devil Supercar", category: "Cars", imageUrl: typeof supercarImg === 'object' ? supercarImg.default : supercarImg, resolution: "4K", downloads: 2300, likes: 512 },
-    { id: 4, title: "Devil BMW in Smoke", category: "Cars", imageUrl: typeof devilBmwImg === 'object' ? devilBmwImg.default : devilBmwImg, resolution: "4K", downloads: 1420, likes: 389 },
-    { id: 5, title: "Divine Ascent", category: "Fantasy", imageUrl: typeof divineAscentImg === 'object' ? divineAscentImg.default : divineAscentImg, resolution: "4K", downloads: 930, likes: 178 },
-    { id: 6, title: "Midnight GT-R Dreams", category: "Cars", imageUrl: typeof midnightGtrImg === 'object' ? midnightGtrImg.default : midnightGtrImg, resolution: "4K", downloads: 3100, likes: 740 },
-    { id: 7, title: "Misty Creeper Forest", category: "Nature", imageUrl: typeof mistyCreeperImg === 'object' ? mistyCreeperImg.default : mistyCreeperImg, resolution: "4K", downloads: 640, likes: 120 },
-    { id: 8, title: "Neon Anime Avatar", category: "Anime", imageUrl: typeof neonAvatarImg === 'object' ? neonAvatarImg.default : neonAvatarImg, resolution: "4K", downloads: 1890, likes: 430 },
-    { id: 9, title: "Stormbound Ember Halo", category: "Space", imageUrl: typeof stormboundImg === 'object' ? stormboundImg.default : stormboundImg, resolution: "4K", downloads: 1150, likes: 290 },
-  ]);
-
-  // Filter wallpapers based on search and category (including Favorites tab handling)
-  const filteredWallpapers = wallpapers.filter((wp) => {
-    const matchesCategory = 
-      selectedCategory === "All" ? true :
-      selectedCategory === "Favorites" ? favorites.includes(wp.id) :
-      wp.category === selectedCategory;
-
-    const matchesSearch = wp.title.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  // Listen to Google Auth state changes
+  // Fetch wallpapers and user session on load
   useEffect(() => {
+    const fetchWallpapers = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "wallpapers"));
+        if (!querySnapshot.empty) {
+          const fetchedWps = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          // Combine default wallpapers with custom uploaded ones from Firestore
+          setWallpapers([...fetchedWps, ...defaultWallpapers]);
+        }
+      } catch (err) {
+        console.error("Error fetching wallpapers from Firestore:", err);
+      }
+    };
+
+    fetchWallpapers();
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        
-        // Fetch user favorites from Firestore
         const userRef = doc(db, "users", currentUser.uid);
         const userSnap = await getDoc(userRef);
 
@@ -82,7 +82,26 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Toggle Favorite handler with Firestore sync
+  // Add new wallpaper and save it directly to Firestore
+  const handleAddWallpaper = async (newWallpaper) => {
+    try {
+      const wallpaperData = {
+        ...newWallpaper,
+        downloads: 0,
+        likes: 0,
+        createdAt: Date.now()
+      };
+
+      const docRef = await addDoc(collection(db, "wallpapers"), wallpaperData);
+      
+      // Update state immediately so it appears on screen without refresh
+      setWallpapers([{ id: docRef.id, ...wallpaperData }, ...wallpapers]);
+      setIsAddModalOpen(false);
+    } catch (error) {
+      console.error("Error adding wallpaper to Firestore: ", error);
+    }
+  };
+
   const toggleFavorite = async (wallpaperId) => {
     if (!user) {
       setIsLoginModalOpen(true);
@@ -94,26 +113,15 @@ export default function App() {
 
     if (favorites.includes(wallpaperId)) {
       updatedFavorites = favorites.filter(id => id !== wallpaperId);
-      await updateDoc(userRef, {
-        favorites: arrayRemove(wallpaperId)
-      });
+      await updateDoc(userRef, { favorites: arrayRemove(wallpaperId) });
     } else {
       updatedFavorites = [...favorites, wallpaperId];
-      await updateDoc(userRef, {
-        favorites: arrayUnion(wallpaperId)
-      });
+      await updateDoc(userRef, { favorites: arrayUnion(wallpaperId) });
     }
 
     setFavorites(updatedFavorites);
   };
 
-  // Add new wallpaper handler
-  const handleAddWallpaper = (newWallpaper) => {
-    setWallpapers([ { id: Date.now(), ...newWallpaper, downloads: 0, likes: 0 }, ...wallpapers ]);
-    setIsAddModalOpen(false);
-  };
-
-  // Sign out handler
   const handleSignOut = async () => {
     try {
       await signOut(auth);
@@ -122,6 +130,16 @@ export default function App() {
       console.error("Error signing out: ", error);
     }
   };
+
+  const filteredWallpapers = wallpapers.filter((wp) => {
+    const matchesCategory = 
+      selectedCategory === "All" ? true :
+      selectedCategory === "Favorites" ? favorites.includes(wp.id) :
+      wp.category === selectedCategory;
+
+    const matchesSearch = wp.title.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -146,7 +164,6 @@ export default function App() {
         />
       </main>
 
-      {/* Modals */}
       {selectedWallpaper && (
         <WallpaperModal 
           wallpaper={selectedWallpaper} 
