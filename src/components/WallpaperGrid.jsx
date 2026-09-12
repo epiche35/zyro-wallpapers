@@ -1,61 +1,71 @@
 import React, { useState } from 'react';
-import { Search, Download, Heart } from 'lucide-react';
 
-const SAMPLE_WALLPAPERS = [
-  { id: 1, title: 'Neon Horizon', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80' },
-  { id: 2, title: 'Cyber Pulse', url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80' },
-  { id: 3, title: 'Glass Wave', url: 'https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?auto=format&fit=crop&w=800&q=80' },
-  { id: 4, title: 'Abstract Prism', url: 'https://images.unsplash.com/photo-1618005198919-d3d4b5a92ead?auto=format&fit=crop&w=800&q=80' }
-];
+export default function WallpaperGrid({ wallpapers = [] }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
-export default function WallpaperGrid() {
-  const [search, setSearch] = useState('');
+  // List of category options matching your roadmap
+  const categories = ["All", "Anime", "Cars", "Gaming", "Aesthetic", "AMOLED", "4K", "Minimal"];
 
-  const filteredWallpapers = SAMPLE_WALLPAPERS.filter(wp =>
-    wp.title.toLowerCase().includes(search.toLowerCase())
-  );
+  // Filter wallpapers by search keyword and selected category
+  const filteredWallpapers = wallpapers.filter((wallpaper) => {
+    const matchesSearch = 
+      wallpaper.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      wallpaper.category?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = 
+      selectedCategory === "All" || wallpaper.category === selectedCategory;
+
+    return matchesSearch && matchesCategory;
+  });
 
   return (
-    <div className="space-y-8">
-      <div className="relative max-w-xl mx-auto">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+    <div className="p-4 max-w-7xl mx-auto">
+      {/* Search Bar Input */}
+      <div className="mb-6 flex justify-center">
         <input
           type="text"
-          placeholder="Search wallpapers..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 rounded-2xl glass-card bg-slate-900/50 border border-white/10 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-neonCyan transition-all"
+          placeholder="Search wallpapers (e.g., Anime, Gojo, 4K)..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full max-w-md px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white dark:border-gray-700"
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {filteredWallpapers.map((wp) => (
-          <div key={wp.id} className="group glass-card rounded-2xl overflow-hidden border border-white/10 hover:border-neonCyan/50 transition-all duration-300">
-            <div className="relative h-64 overflow-hidden">
-              <img
-                src={wp.url}
-                alt={wp.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4">
-                <span className="font-semibold text-slate-100">{wp.title}</span>
-                <div className="flex space-x-2">
-                  <button className="p-2 rounded-xl glass-card hover:bg-white/20 text-neonPink transition-colors">
-                    <Heart className="h-4 w-4" />
-                  </button>
-                  <a
-                    href={wp.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 rounded-xl glass-card hover:bg-white/20 text-neonCyan transition-colors"
-                  >
-                    <Download className="h-4 w-4" />
-                  </a>
-                </div>
+      {/* Category Filter Pills */}
+      <div className="flex overflow-x-auto space-x-2 pb-4 mb-6 scrollbar-none justify-start md:justify-center">
+        {categories.map((category) => (
+          <button
+            key={category}
+            onClick={() => setSelectedCategory(category)}
+            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              selectedCategory === category
+                ? 'bg-blue-600 text-white shadow'
+                : 'bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+            }`}
+          >
+            {category}
+          </button>
+        ))}
+      </div>
+
+      {/* Wallpaper Grid Display */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {filteredWallpapers.length > 0 ? (
+          filteredWallpapers.map((wallpaper, index) => (
+            <div key={index} className="bg-white dark:bg-gray-900 rounded-lg overflow-hidden shadow border dark:border-gray-800">
+              <img src={wallpaper.url} alt={wallpaper.name} className="w-full h-48 object-cover" />
+              <div className="p-3">
+                <div className="text-sm font-semibold truncate dark:text-white">{wallpaper.name}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{wallpaper.category}</div>
               </div>
             </div>
+          ))
+        ) : (
+          <div className="col-span-full text-center py-10 text-gray-500 dark:text-gray-400">
+            No wallpapers found matching your filter.
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
