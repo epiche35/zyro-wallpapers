@@ -1,94 +1,87 @@
 import React from 'react';
 
-export default function WallpaperModal({ wallpaper, onClose, onLike, onDownload, isLiked }) {
+export default function WallpaperModal({ wallpaper, onClose, isLiked, onLike, onFilterByUser }) {
   if (!wallpaper) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fadeIn">
-      <div className="relative bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col md:flex-row shadow-2xl">
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="bg-gray-900 border border-gray-800 rounded-3xl max-w-4xl w-full overflow-hidden relative shadow-2xl flex flex-col md:flex-row">
         
         {/* Close Button */}
-        <button
+        <button 
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 bg-black/60 hover:bg-black text-white w-10 h-10 rounded-full flex items-center justify-center transition cursor-pointer"
+          className="absolute top-4 right-4 z-10 text-gray-400 hover:text-white bg-black/50 hover:bg-black p-2.5 rounded-full transition cursor-pointer"
         >
           ✕
         </button>
 
-        {/* Left Side: Full Image Preview */}
-        <div className="w-full md:w-2/3 bg-black flex items-center justify-center p-2 overflow-hidden">
-          <img
-            src={wallpaper.imageUrl}
-            alt={wallpaper.title}
-            className="max-h-[80vh] w-auto object-contain rounded-lg"
+        {/* Wallpaper Image Preview */}
+        <div className="w-full md:w-3/5 bg-black flex items-center justify-center max-h-[80vh]">
+          <img 
+            src={wallpaper.imageUrl} 
+            alt={wallpaper.title} 
+            className="w-full h-full object-contain max-h-[80vh]"
           />
         </div>
 
-        {/* Right Side: Details & Actions */}
-        <div className="w-full md:w-1/3 p-6 flex flex-col justify-between bg-gray-950 overflow-y-auto">
+        {/* Details & Uploader Info */}
+        <div className="w-full md:w-2/5 p-6 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="inline-block bg-blue-600/20 text-blue-400 text-xs px-3 py-1 rounded-full font-medium">
-                🏷️ {wallpaper.category}
-              </span>
-              <span className="text-xs text-gray-400 font-medium">
-                📐 {wallpaper.resolution}
-              </span>
-            </div>
+            <span className="text-xs font-semibold px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full">
+              {wallpaper.category}
+            </span>
+            <h2 className="text-2xl font-bold text-white mt-3 mb-1">{wallpaper.title}</h2>
+            <p className="text-gray-400 text-xs mb-6">Resolution: {wallpaper.resolution || '4K'}</p>
 
-            <h2 className="text-2xl font-bold text-white mb-4">{wallpaper.title}</h2>
-
-            <div className="flex items-center gap-6 text-sm text-gray-300 py-4 border-t border-b border-gray-800 mb-6">
-              <div>
-                <span className="block text-gray-500 text-xs">Likes</span>
-                <span className="font-semibold text-white">❤️ {wallpaper.likes} Likes</span>
-              </div>
-              <div>
-                <span className="block text-gray-500 text-xs">Downloads</span>
-                <span className="font-semibold text-white">⬇️ {wallpaper.downloads} Downloads</span>
-              </div>
-            </div>
-
-            {/* Tags list */}
-            {wallpaper.tags && (
-              <div className="mb-6">
-                <span className="block text-xs text-gray-400 mb-2">Tags:</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {wallpaper.tags.map(tag => (
-                    <span key={tag} className="bg-gray-800 text-gray-300 text-xs px-2.5 py-1 rounded-md">
-                      #{tag}
-                    </span>
-                  ))}
+            {/* Creator / Uploader Profile Section */}
+            <div className="bg-gray-800/50 border border-gray-800 rounded-2xl p-4 flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
+                  {wallpaper.userName ? wallpaper.userName.charAt(0).toUpperCase() : 'Z'}
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400">Uploaded by</p>
+                  <p className="text-sm font-semibold text-white">{wallpaper.userName || 'Zyro Community'}</p>
                 </div>
               </div>
-            )}
+
+              {wallpaper.userId && (
+                <button
+                  onClick={() => {
+                    onFilterByUser(wallpaper.userId);
+                    onClose();
+                  }}
+                  className="text-xs bg-gray-800 hover:bg-gray-700 text-blue-400 font-medium px-3 py-2 rounded-xl transition cursor-pointer border border-gray-700"
+                >
+                  View Profile
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="flex flex-col gap-3">
-            {/* Download Button */}
-            <a
-              href={wallpaper.imageUrl}
-              download={`${wallpaper.title}.png`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => onDownload(wallpaper.id)}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl text-center transition cursor-pointer flex items-center justify-center gap-2 shadow-lg"
-            >
-              📥 Download Wallpaper
-            </a>
-
-            {/* Favorite Toggle Button */}
+          {/* Action Buttons (Like / Download) */}
+          <div className="flex gap-3 pt-4 border-t border-gray-800">
             <button
               onClick={() => onLike(wallpaper.id)}
-              className={`w-full font-medium py-2.5 rounded-xl text-sm transition cursor-pointer flex items-center justify-center gap-2 ${
+              className={`flex-1 py-3 rounded-xl font-medium text-sm transition flex items-center justify-center gap-2 cursor-pointer ${
                 isLiked 
-                  ? 'bg-pink-600 text-white hover:bg-pink-500' 
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+                  ? 'bg-red-500/10 text-red-500 border border-red-500/30' 
+                  : 'bg-gray-800 hover:bg-gray-700 text-white'
               }`}
             >
-              {isLiked ? '❤️ Remove from Favorites' : '♡ Add to Favorites'}
+              ♥ {isLiked ? 'Favorited' : 'Favorite'}
             </button>
+            <a
+              href={wallpaper.imageUrl}
+              download={`${wallpaper.title}.jpg`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium text-sm transition text-center shadow-lg cursor-pointer"
+            >
+              Download
+            </a>
           </div>
+
         </div>
       </div>
     </div>

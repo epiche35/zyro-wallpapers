@@ -21,20 +21,21 @@ import neonAvatarImg from './assets/Neon Anime Avatar_ Evolve in Blue.png';
 import stormboundImg from './assets/Stormbound Ember Halo.png';
 
 const defaultWallpapers = [
-  { id: 1, title: "Butterfly Anime Girl", category: "Anime", imageUrl: typeof butterflyImg === 'object' ? butterflyImg.default : butterflyImg, resolution: "4K", downloads: 1240, likes: 342 },
-  { id: 2, title: "Crimson Devil Pirate", category: "Anime", imageUrl: typeof crimsonDevilImg === 'object' ? crimsonDevilImg.default : crimsonDevilImg, resolution: "4K", downloads: 850, likes: 215 },
-  { id: 3, title: "Crimson Devil Supercar", category: "Cars", imageUrl: typeof supercarImg === 'object' ? supercarImg.default : supercarImg, resolution: "4K", downloads: 2300, likes: 512 },
-  { id: 4, title: "Devil BMW in Smoke", category: "Cars", imageUrl: typeof devilBmwImg === 'object' ? devilBmwImg.default : devilBmwImg, resolution: "4K", downloads: 1420, likes: 389 },
-  { id: 5, title: "Divine Ascent", category: "Fantasy", imageUrl: typeof divineAscentImg === 'object' ? divineAscentImg.default : divineAscentImg, resolution: "4K", downloads: 930, likes: 178 },
-  { id: 6, title: "Midnight GT-R Dreams", category: "Cars", imageUrl: typeof midnightGtrImg === 'object' ? midnightGtrImg.default : midnightGtrImg, resolution: "4K", downloads: 3100, likes: 740 },
-  { id: 7, title: "Misty Creeper Forest", category: "Nature", imageUrl: typeof mistyCreeperImg === 'object' ? mistyCreeperImg.default : mistyCreeperImg, resolution: "4K", downloads: 640, likes: 120 },
-  { id: 8, title: "Neon Anime Avatar", category: "Anime", imageUrl: typeof neonAvatarImg === 'object' ? neonAvatarImg.default : neonAvatarImg, resolution: "4K", downloads: 1890, likes: 430 },
-  { id: 9, title: "Stormbound Ember Halo", category: "Space", imageUrl: typeof stormboundImg === 'object' ? stormboundImg.default : stormboundImg, resolution: "4K", downloads: 1150, likes: 290 },
+  { id: 1, title: "Butterfly Anime Girl", category: "Anime", imageUrl: typeof butterflyImg === 'object' ? butterflyImg.default : butterflyImg, resolution: "4K", downloads: 1240, likes: 342, userName: "Zyro Official" },
+  { id: 2, title: "Crimson Devil Pirate", category: "Anime", imageUrl: typeof crimsonDevilImg === 'object' ? crimsonDevilImg.default : crimsonDevilImg, resolution: "4K", downloads: 850, likes: 215, userName: "Zyro Official" },
+  { id: 3, title: "Crimson Devil Supercar", category: "Cars", imageUrl: typeof supercarImg === 'object' ? supercarImg.default : supercarImg, resolution: "4K", downloads: 2300, likes: 512, userName: "Zyro Official" },
+  { id: 4, title: "Devil BMW in Smoke", category: "Cars", imageUrl: typeof devilBmwImg === 'object' ? devilBmwImg.default : devilBmwImg, resolution: "4K", downloads: 1420, likes: 389, userName: "Zyro Official" },
+  { id: 5, title: "Divine Ascent", category: "Fantasy", imageUrl: typeof divineAscentImg === 'object' ? divineAscentImg.default : divineAscentImg, resolution: "4K", downloads: 930, likes: 178, userName: "Zyro Official" },
+  { id: 6, title: "Midnight GT-R Dreams", category: "Cars", imageUrl: typeof midnightGtrImg === 'object' ? midnightGtrImg.default : midnightGtrImg, resolution: "4K", downloads: 3100, likes: 740, userName: "Zyro Official" },
+  { id: 7, title: "Misty Creeper Forest", category: "Nature", imageUrl: typeof mistyCreeperImg === 'object' ? mistyCreeperImg.default : mistyCreeperImg, resolution: "4K", downloads: 640, likes: 120, userName: "Zyro Official" },
+  { id: 8, title: "Neon Anime Avatar", category: "Anime", imageUrl: typeof neonAvatarImg === 'object' ? neonAvatarImg.default : neonAvatarImg, resolution: "4K", downloads: 1890, likes: 430, userName: "Zyro Official" },
+  { id: 9, title: "Stormbound Ember Halo", category: "Space", imageUrl: typeof stormboundImg === 'object' ? stormboundImg.default : stormboundImg, resolution: "4K", downloads: 1150, likes: 290, userName: "Zyro Official" },
 ];
 
 export default function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedUserId, setSelectedUserId] = useState(null); // Filter by uploader profile
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -43,7 +44,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [favorites, setFavorites] = useState([]);
 
-  // Load wallpapers from localStorage combined with default ones
+  // Load custom wallpapers from localStorage combined with default ones
   const [wallpapers, setWallpapers] = useState(() => {
     try {
       const saved = localStorage.getItem('zyro_custom_wallpapers');
@@ -57,7 +58,6 @@ export default function App() {
     return defaultWallpapers;
   });
 
-  // Fetch user favorites session on load
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -80,20 +80,27 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Add new wallpaper, close modal immediately, and save to localStorage
+  // Protected add wallpaper handler requiring user login & attaching metadata
   const handleAddWallpaper = (newWallpaper) => {
-    setIsAddModalOpen(false); // Closes popup window instantly
+    if (!user) {
+      setIsAddModalOpen(false);
+      setIsLoginModalOpen(true);
+      return;
+    }
+
+    setIsAddModalOpen(false);
 
     const wallpaperData = {
       id: Date.now(),
       ...newWallpaper,
+      userId: user.uid,
+      userName: user.displayName || user.email.split('@')[0],
       downloads: 0,
       likes: 0
     };
 
     setWallpapers(prev => {
       const updated = [wallpaperData, ...prev];
-      // Filter out default wallpapers before saving custom ones to localStorage
       const customOnly = updated.filter(w => !defaultWallpapers.some(dw => dw.id === w.id));
       localStorage.setItem('zyro_custom_wallpapers', JSON.stringify(customOnly));
       return updated;
@@ -135,8 +142,10 @@ export default function App() {
       selectedCategory === "Favorites" ? favorites.includes(wp.id) :
       wp.category === selectedCategory;
 
+    const matchesUser = selectedUserId ? wp.userId === selectedUserId : true;
     const matchesSearch = wp.title.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
+    
+    return matchesCategory && matchesUser && matchesSearch;
   });
 
   return (
@@ -145,14 +154,33 @@ export default function App() {
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
-        onOpenAddModal={() => setIsAddModalOpen(true)}
+        setSelectedCategory={(cat) => { setSelectedCategory(cat); setSelectedUserId(null); }}
+        onOpenAddModal={() => {
+          if (!user) {
+            setIsLoginModalOpen(true);
+          } else {
+            setIsAddModalOpen(true);
+          }
+        }}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
         user={user}
         onLogout={handleSignOut}
       />
       
+      {/* Active User Filter Banner if filtering by profile */}
+      {selectedUserId && (
+        <div className="bg-blue-600/10 border-b border-blue-500/20 px-4 py-2.5 text-center text-xs text-blue-400 flex items-center justify-center gap-3">
+          <span>Showing wallpapers uploaded by user profile</span>
+          <button 
+            onClick={() => setSelectedUserId(null)} 
+            className="underline font-semibold cursor-pointer hover:text-blue-300"
+          >
+            Clear Filter
+          </button>
+        </div>
+      )}
+
       <main className="container mx-auto px-4 py-8">
         <WallpaperGrid 
           wallpapers={filteredWallpapers}
@@ -168,6 +196,10 @@ export default function App() {
           onClose={() => setSelectedWallpaper(null)}
           isLiked={favorites.includes(selectedWallpaper.id)}
           onLike={toggleFavorite}
+          onFilterByUser={(uid) => {
+            setSelectedUserId(uid);
+            setSelectedCategory("All");
+          }}
         />
       )}
 
