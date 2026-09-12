@@ -1,42 +1,101 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-export default function ProfileMenuModal({ isOpen, onClose, user, onLogout }) {
-  if (!isOpen) return null;
+export default function ProfileMenuModal({ isOpen, onClose, user, onUpdateUser, onLogout }) {
+  if (!isOpen || !user) return null;
+
+  const [displayName, setDisplayName] = useState(user.displayName || '');
+  const [email, setEmail] = useState(user.email || '');
+  const [photoURL, setPhotoURL] = useState(user.photoURL || '');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onUpdateUser({ ...user, displayName, email, photoURL });
+    onClose();
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-gray-900 border border-gray-800 w-80 rounded-2xl p-6 text-white shadow-2xl relative">
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white text-lg font-bold"
-        >
-          &times;
-        </button>
-
-        <div className="flex flex-col items-center text-center mt-2">
-          <img 
-            src={user?.photoURL} 
-            alt="Profile" 
-            className="w-20 h-20 rounded-full object-cover border-2 border-blue-500 shadow-md"
-          />
-          <h2 className="text-lg font-bold mt-3">{user?.displayName || "Zyro"}</h2>
-          <p className="text-xs text-gray-400">{user?.email || "zyro@wallpapers.com"}</p>
-        </div>
-
-        <div className="mt-6 border-t border-gray-800 pt-4 flex flex-col gap-2">
-          <button 
-            onClick={() => { alert("Settings clicked!"); onClose(); }}
-            className="w-full text-left px-4 py-2 rounded-xl text-sm hover:bg-gray-800 transition-colors"
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn">
+      <div className="relative bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden max-w-md w-full shadow-2xl p-6">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between pb-4 border-b border-gray-800 mb-6">
+          <h2 className="text-lg font-bold text-white">Profile Settings</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition cursor-pointer text-sm bg-gray-800 hover:bg-gray-700 w-8 h-8 rounded-full flex items-center justify-center"
           >
-            ⚙️ Account Settings
-          </button>
-          <button 
-            onClick={() => { onLogout(); onClose(); }}
-            className="w-full text-left px-4 py-2 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-          >
-            🚪 Sign Out
+            ✕
           </button>
         </div>
+
+        {/* Settings Form */}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          
+          {/* Avatar Preview */}
+          <div className="flex flex-col items-center justify-center mb-2">
+            <img
+              src={photoURL || "https://via.placeholder.com/80"}
+              alt="Profile Avatar"
+              className="w-20 h-20 rounded-full object-cover border-2 border-blue-500 mb-2 shadow-md"
+            />
+            <p className="text-xs text-gray-400">Account Profile Picture</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-300 mb-1">Display Name</label>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-300 mb-1">Email Address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-300 mb-1">Avatar Image Link / URL</label>
+            <input
+              type="text"
+              value={photoURL}
+              onChange={(e) => setPhotoURL(e.target.value)}
+              placeholder="Paste image link here..."
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-2.5 mt-4 pt-4 border-t border-gray-800">
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition cursor-pointer"
+            >
+              Save Changes
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onLogout();
+                onClose();
+              }}
+              className="w-full bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/20 font-medium py-2.5 rounded-xl text-sm transition cursor-pointer"
+            >
+              Log Out
+            </button>
+          </div>
+        </form>
+
       </div>
     </div>
   );

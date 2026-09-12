@@ -9,7 +9,8 @@ export default function Navbar({
   onOpenProfileModal,
   user
 }) {
-  const categories = ["All", "Anime", "Cars", "Fantasy", "Nature"];
+  // Added "Favorites" to the categories list
+  const categories = ["All", "Favorites", "Anime", "Cars", "Fantasy", "Nature"];
 
   return (
     <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-40">
@@ -55,7 +56,7 @@ export default function Navbar({
         </div>
       </div>
 
-      {/* Categories Filter Bar */}
+      {/* Categories & Favorites Filter Bar */}
       <div className="max-w-7xl mx-auto px-4 pb-3 flex items-center gap-2 overflow-x-auto">
         {categories.map((cat) => (
           <button
@@ -67,7 +68,7 @@ export default function Navbar({
                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
             }`}
           >
-            {cat}
+            {cat === "Favorites" ? "❤️ Favorites" : cat}
           </button>
         ))}
       </div>
