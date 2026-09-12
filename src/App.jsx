@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from './firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import Navbar from './components/Navbar';
 import WallpaperGrid from './components/WallpaperGrid';
@@ -84,6 +84,16 @@ export default function App() {
     setFavorites(updatedFavorites);
   };
 
+  // Sign out handler
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      setIsProfileModalOpen(false);
+    } catch (error) {
+      console.error("Error signing out: ", error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <Navbar 
@@ -106,7 +116,14 @@ export default function App() {
         <LoginModal onClose={() => setIsLoginModalOpen(false)} />
       )}
 
-      {/* Other custom modals will go here */}
+      {isProfileModalOpen && user && (
+        <ProfileMenuModal 
+          user={user} 
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)} 
+          onSignOut={handleSignOut}
+        />
+      )}
     </div>
   );
 }
