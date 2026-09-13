@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import logoImg from '../assets/logo.png';
 
 export default function Navbar({ 
   searchTerm, 
@@ -8,8 +9,7 @@ export default function Navbar({
   onOpenAddModal, 
   onOpenProfileModal, 
   onOpenLoginModal, 
-  user, 
-  onLogout 
+  user 
 }) {
   const categories = ["All", "Favorites", "Anime", "Cars", "Gaming", "AMOLED", "Aesthetic", "Space", "Minimal", "Fantasy", "Nature"];
 
@@ -17,12 +17,17 @@ export default function Navbar({
     <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80">
       <div className="container mx-auto px-4 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4">
         
-        {/* Logo */}
+        {/* Logo Section */}
         <div className="flex items-center justify-between w-full md:w-auto">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setSelectedCategory("All"); setSearchTerm(""); }}>
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-blue-500/20">
-              Z
-            </div>
+          <div 
+            className="flex items-center gap-2.5 cursor-pointer" 
+            onClick={() => { setSelectedCategory("All"); setSearchTerm(""); }}
+          >
+            <img 
+              src={typeof logoImg === 'object' ? logoImg.default : logoImg} 
+              alt="ZyroWallpapers Logo" 
+              className="w-10 h-10 rounded-2xl object-cover shadow-lg shadow-blue-500/20 border border-slate-800"
+            />
             <span className="font-bold text-lg tracking-tight text-white">Zyro<span className="text-blue-500">Wallpapers</span></span>
           </div>
 
@@ -37,7 +42,7 @@ export default function Navbar({
             {user ? (
               <button 
                 onClick={onOpenProfileModal}
-                className="w-9 h-9 rounded-full overflow-hidden border border-slate-700 focus:outline-none cursor-pointer"
+                className="w-9 h-9 rounded-full overflow-hidden border border-slate-700 focus:outline-none cursor-pointer shadow-md"
               >
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" />
@@ -85,7 +90,7 @@ export default function Navbar({
             <button 
               onClick={onOpenProfileModal}
               className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-700 hover:border-blue-500 transition focus:outline-none cursor-pointer shadow-md"
-              title="Open Profile Dashboard"
+              title="Open Profile Dashboard & Settings"
             >
               {user.photoURL ? (
                 <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" />

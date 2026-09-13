@@ -1,93 +1,202 @@
 import React, { useState } from 'react';
+import { auth } from '../firebase';
+import { updateProfile, updateEmail, updatePassword } from 'firebase/auth';
 
-export default function ProfileMenuModal({ isOpen, onClose, user, onSignOut }) {
+export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wallpapers, onSelectWallpaper }) {
+  const [activeTab, setActiveTab] = useState('uploads'); // 'uploads' or 'settings'
+  
+  // Settings form states
+  const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [newPassword, setNewPassword] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
   if (!isOpen || !user) return null;
 
-  const [displayName, setDisplayName] = useState(user.displayName || '');
-  const [email, setEmail] = useState(user.email || '');
-  const [photoURL, setPhotoURL] = useState(user.photoURL || '');
+  // Filter wallpapers uploaded by the currently logged-in user
+  const userUploads = wallpapers.filter(wp => wp.userId === user.uid);
 
-  const handleSubmit = (e) => {
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    // Profile update logic can be added here if needed
-    onClose();
+    setMessage('');
+    setError('');
+    setLoading(true);
+
+    try {
+      // Update Display Name
+      if (displayName !== user.displayName) {
+        await updateProfile(user, { displayName });
+      }
+
+      // Update Email
+      if (email !== user.email) {
+        await updateEmail(user, email);
+      }
+
+      // Update Password if filled out
+      if (newPassword) {
+        await updatePassword(user, newPassword);
+      }
+
+      setMessage('Profile updated successfully!');
+      setNewPassword('');
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn">
-      <div className="relative bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden max-w-md w-full shadow-2xl p-6">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-3xl relative shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
         
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-gray-800 mb-6">
-          <div>
-            <h2 className="text-lg font-bold text-white">Profile Settings</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Manage your account details</p>
+        {/* Modal Header */}
+        <div className="p-6 border-b border-gray-800 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+              {user.displayName ? user.displayName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : 'U')}
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">{user.displayName || 'Zyro User'}</h2>
+              <p className="text-xs text-gray-400">{user.email}</p>
+            </div>
           </div>
-          <button
+          
+          <button 
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition cursor-pointer text-sm bg-gray-800 hover:bg-gray-700 w-8 h-8 rounded-full flex items-center justify-center"
+            className="text-gray-400 hover:text-white bg-gray-800 p-2.5 rounded-full transition cursor-pointer"
           >
             ✕
           </button>
         </div>
 
-        {/* Settings Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {/* Navigation Tabs (My Uploads vs Settings) */}
+        <div className="flex border-b border-gray-800 px-6 bg-gray-900/50">
+          <button
+            onClick={() => { setActiveTab('uploads'); setMessage(''); setError(''); }}
+            className={`py-3 px-4 text-xs font-semibold border-b-2 transition cursor-pointer ${
+              activeTab === 'uploads' 
+                ? 'border-blue-500 text-blue-400' 
+                : 'border-transparent text-gray-400 hover:text-white'
+            }`}
+          >
+            🖼️ My Uploads ({userUploads.length})
+          </button>
+          <button
+            onClick={() => { setActiveTab('settings'); setMessage(''); setError(''); }}
+            className={`py-3 px-4 text-xs font-semibold border-b-2 transition cursor-pointer ${
+              activeTab === 'settings' 
+                ? 'border-blue-500 text-blue-400' 
+                : 'border-transparent text-gray-400 hover:text-white'
+            }`}
+          >
+            ⚙️ Account Settings
+          </button>
+        </div>
+
+        {/* Modal Body Content */}
+        <div className="p-6 overflow-y-auto flex-1">
           
-          {/* Avatar Preview */}
-          <div className="flex flex-col items-center justify-center mb-2">
-            <img
-              src={photoURL || user.photoURL || "https://via.placeholder.com/80"}
-              alt="Profile Avatar"
-              className="w-20 h-20 rounded-full object-cover border-2 border-blue-500 mb-2 shadow-md"
-            />
-            <p className="text-xs text-gray-400">{user.displayName || "Zyro User"}</p>
-          </div>
+          {/* TAB 1: MY UPLOADS GRID */}
+          {activeTab === 'uploads' && (
+            <div>
+              {userUploads.length === 0 ? (
+                <div className="text-center py-12 text-gray-500 text-sm">
+                  You haven't uploaded any wallpapers yet. Use the "+ Add Wallpaper" button to share your creations!
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {userUploads.map(wp => (
+                    <div 
+                      key={wp.id} 
+                      onClick={() => { onSelectWallpaper(wp); onClose(); }}
+                      className="group relative bg-gray-800 rounded-2xl overflow-hidden cursor-pointer aspect-[9/13] border border-gray-800 hover:border-gray-700 transition"
+                    >
+                      <img src={wp.imageUrl} alt={wp.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                        <p className="text-xs font-medium text-white truncate">{wp.title}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-          <div>
-            <label className="block text-xs font-medium text-gray-300 mb-1">Display Name</label>
-            <input
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-              required
-            />
-          </div>
+          {/* TAB 2: ACCOUNT SETTINGS FORM */}
+          {activeTab === 'settings' && (
+            <div className="max-w-md mx-auto">
+              {message && (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs p-3 rounded-xl mb-4">
+                  {message}
+                </div>
+              )}
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs p-3 rounded-xl mb-4">
+                  {error}
+                </div>
+              )}
 
-          <div>
-            <label className="block text-xs font-medium text-gray-300 mb-1">Email Address</label>
-            <input
-              type="email"
-              value={email}
-              disabled
-              className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-sm text-gray-400 cursor-not-allowed"
-            />
-          </div>
+              <form onSubmit={handleUpdateProfile} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">Display Name</label>
+                  <input 
+                    type="text" 
+                    value={displayName} 
+                    onChange={(e) => setDisplayName(e.target.value)} 
+                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-2.5 mt-4 pt-4 border-t border-gray-800">
-            <button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-xl text-sm transition cursor-pointer"
-            >
-              Save Changes
-            </button>
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
+                  <input 
+                    type="email" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                onSignOut();
-                onClose();
-              }}
-              className="w-full bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/20 font-medium py-2.5 rounded-xl text-sm transition cursor-pointer"
-            >
-              Log Out
-            </button>
-          </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">New Password (leave blank to keep current)</label>
+                  <input 
+                    type="password" 
+                    value={newPassword} 
+                    onChange={(e) => setNewPassword(e.target.value)} 
+                    placeholder="••••••••"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
 
-        </form>
+                <div className="pt-2">
+                  <button 
+                    type="submit" 
+                    disabled={loading}
+                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl text-sm transition shadow-lg cursor-pointer disabled:opacity-50"
+                  >
+                    {loading ? 'Saving Changes...' : 'Save Profile Changes'}
+                  </button>
+                </div>
+              </form>
 
+              <div className="mt-8 pt-6 border-t border-gray-800 flex justify-between items-center">
+                <span className="text-xs text-gray-500">Need to switch accounts?</span>
+                <button 
+                  onClick={() => { onSignOut(); onClose(); }}
+                  className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-medium px-4 py-2 rounded-xl transition cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   );
