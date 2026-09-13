@@ -17,13 +17,17 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
 
   if (!isOpen || !user) return null;
 
-  // Filter wallpapers uploaded by the currently logged-in user
   const userUploads = wallpapers.filter(wp => wp.userId === user.uid);
 
-  // Handle image file selection for profile picture
+  // Handle image file selection with a compression/size guard
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 800000) { // ~800KB limit for profile pics to avoid token bloat
+        setError('Profile picture is too large. Please choose an image under 800KB.');
+        return;
+      }
+      setError('');
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -40,7 +44,7 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
     setLoading(true);
 
     try {
-      // Update Firebase Profile (DisplayName & PhotoURL)
+      // 1. Update Profile (Name & Photo)
       const profileUpdates = {};
       if (displayName !== user.displayName) profileUpdates.displayName = displayName;
       if (photoURL !== user.photoURL) profileUpdates.photoURL = photoURL;
@@ -49,13 +53,13 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
         await updateProfile(user, profileUpdates);
       }
 
-      // Update Email if changed
-      if (email !== user.email) {
+      // 2. Update Email if changed
+      if (email && email !== user.email) {
         await updateEmail(user, email);
       }
 
-      // Update Password if filled out
-      if (newPassword) {
+      // 3. Update Password if provided
+      if (newPassword && newPassword.trim() !== '') {
         await updatePassword(user, newPassword);
       }
 
@@ -63,7 +67,12 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
       setNewPassword('');
     } catch (err) {
       console.error(err);
-      setError(err.message);
+      // Clean up common firebase errors for the user
+      if (err.code === 'auth/requires-recent-login') {
+        setError('For security reasons, changing email or password requires logging out and signing back in first.');
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -76,7 +85,7 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
         {/* Modal Header */}
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 border border-slate-700 flex items-center justify-center text-white font-bold text-lg shadow-md">
+            <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 border border-slate-700 flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0">
               {imagePreview || user.photoURL ? (
                 <img src={imagePreview || user.photoURL} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
@@ -85,7 +94,7 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">{user.displayName || 'Zyro User'}</h2>
-              <p className="text-xs text-slate-400">{user.email}</p>
+              <p className="text-xs text-slate-400 truncate max-w-[200px] sm:max-w-xs">{user.email}</p>
             </div>
           </div>
           
@@ -124,7 +133,6 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
         {/* Modal Body Content */}
         <div className="p-6 overflow-y-auto flex-1">
           
-          {/* TAB 1: MY UPLOADS GRID */}
           {activeTab === 'uploads' && (
             <div>
               {userUploads.length === 0 ? (
@@ -150,7 +158,6 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
             </div>
           )}
 
-          {/* TAB 2: ACCOUNT SETTINGS FORM */}
           {activeTab === 'settings' && (
             <div className="max-w-md mx-auto">
               {message && (
@@ -165,10 +172,8 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
               )}
 
               <form onSubmit={handleUpdateProfile} className="space-y-4">
-                
-                {/* Profile Picture Upload Section */}
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Profile Picture</label>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Profile Picture (Max ~800KB)</label>
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-14 rounded-full overflow-hidden bg-slate-800 border border-slate-700 flex-shrink-0">
                       <img 
