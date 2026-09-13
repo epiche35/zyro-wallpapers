@@ -242,6 +242,8 @@ export default function App() {
           isOpen={isProfileModalOpen}
           onClose={() => setIsProfileModalOpen(false)} 
           onSignOut={handleSignOut}
+          wallpapers={wallpapers}
+          onSelectWallpaper={(wp) => setSelectedWallpaper(wp)}
         />
       )}
     </div>
