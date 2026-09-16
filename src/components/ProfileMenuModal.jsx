@@ -7,8 +7,11 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [email, setEmail] = useState(user?.email || '');
   const [newPassword, setNewPassword] = useState('');
-  const [photoURL, setPhotoURL] = useState(user?.photoURL || '');
-  const [imagePreview, setImagePreview] = useState(user?.photoURL || '');
+  
+  // Retrieve saved avatar from localStorage to bypass Firebase limit
+  const [imagePreview, setImagePreview] = useState(() => {
+    return localStorage.getItem(`zyro_avatar_${user?.uid}`) || user?.photoURL || '';
+  });
   
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -21,7 +24,7 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 2000000) { // Limit increased to 2MB
+      if (file.size > 2000000) { 
         setError('Profile picture is too large. Please choose an image under 2MB.');
         return;
       }
@@ -29,7 +32,6 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
-        setPhotoURL(reader.result);
       };
       reader.readAsDataURL(file);
     }
@@ -42,27 +44,35 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
     setLoading(true);
 
     try {
-      const profileUpdates = {};
-      if (displayName !== user.displayName) profileUpdates.displayName = displayName;
-      if (photoURL !== user.photoURL) profileUpdates.photoURL = photoURL;
-
-      if (Object.keys(profileUpdates).length > 0) {
-        await updateProfile(user, profileUpdates);
+      // 1. Save Base64 image to local browser storage
+      if (imagePreview) {
+        localStorage.setItem(`zyro_avatar_${user.uid}`, imagePreview);
       }
+
+      // 2. Explicitly pass photoURL as empty string to prevent Firebase string length rejection
+      await updateProfile(user, {
+        displayName: displayName,
+        photoURL: '' 
+      });
+
+      // 3. Update Email if changed
       if (email && email !== user.email) {
         await updateEmail(user, email);
       }
+
+      // 4. Update Password if provided
       if (newPassword && newPassword.trim() !== '') {
         await updatePassword(user, newPassword);
       }
+
       setMessage('Profile updated successfully!');
       setNewPassword('');
     } catch (err) {
-      console.error(err);
+      console.error('Update error:', err);
       if (err.code === 'auth/requires-recent-login') {
-        setError('Security: Changing email/password requires logging out and signing back in first.');
+        setError('Security restriction: Please sign out and log back in to change password or email.');
       } else {
-        setError(err.message);
+        setError(err.message || 'Failed to update profile.');
       }
     } finally {
       setLoading(false);
@@ -76,14 +86,14 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 border border-slate-700 flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0">
-              {imagePreview || user.photoURL ? (
-                <img src={imagePreview || user.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+              {imagePreview ? (
+                <img src={imagePreview} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
-                <span>{user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}</span>
+                <span>{displayName ? displayName.charAt(0).toUpperCase() : 'U'}</span>
               )}
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">{user.displayName || 'Zyro User'}</h2>
+              <h2 className="text-lg font-bold text-white">{displayName || 'Zyro User'}</h2>
               <p className="text-xs text-slate-400 truncate max-w-[200px] sm:max-w-xs">{user.email}</p>
             </div>
           </div>
@@ -129,7 +139,7 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
               {message && <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs p-3 rounded-xl mb-4">{message}</div>}
               {error && <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs p-3 rounded-xl mb-4">{error}</div>}
 
-              <form onSubmit={handleUpdateProfile} className="space-y-4">
+              <form onSubmit={handleUpdateProfile} className="space-y-4" autoComplete="off">
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Profile Picture (Max ~2MB)</label>
                   <div className="flex items-center gap-4">
@@ -151,8 +161,8 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">New Password</label>
-                  <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
+                  <label className="block text-xs font-medium text-slate-400 mb-1">New Password (leave blank to keep current)</label>
+                  <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" placeholder="••••••••" className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" />
                 </div>
 
                 <div className="pt-2">
