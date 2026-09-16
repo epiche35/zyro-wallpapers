@@ -1,183 +1,118 @@
 import React, { useState } from 'react';
 
-export default function AddWallpaperModal({ onClose, onAdd }) {
+export default function AddWallpaperModal({ isOpen, onClose, user, onAdd }) {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Anime');
-  const [resolution, setResolution] = useState('4K');
-  const [deviceType, setDeviceType] = useState('Desktop');
+  const [type, setType] = useState('Desktop');
   const [imageUrl, setImageUrl] = useState('');
-  const [imagePreview, setImagePreview] = useState('');
+  const [mediaType, setMediaType] = useState('image'); 
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Handle device file selection
+  if (!isOpen) return null;
+
+  const categories = ["Anime", "Cars", "Gaming", "AMOLED", "Aesthetic", "Space", "Minimal", "Fantasy", "Nature"];
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 5000000) { 
+        setError('File is too large. Please keep videos/images under 5MB for local storage.');
+        return;
+      }
+      setError('');
+      const isVideo = file.type.startsWith('video/');
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result);
-        setImageUrl(''); // Clear URL text input if a file is chosen
+        setImageUrl(reader.result);
+        setMediaType(isVideo ? 'video' : 'image');
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // Handle URL text input change
-  const handleUrlChange = (e) => {
-    setImageUrl(e.target.value);
-    setImagePreview(''); // Clear file preview if a URL is typed
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const finalImage = imagePreview || imageUrl;
-
-    if (!title || !finalImage) {
-      setError('Please provide a title and either upload a file or enter an image URL.');
+    if (!title || !imageUrl) {
+      setError('Please provide a title and upload a file.');
       return;
     }
-
-    onAdd({
-      title,
-      category,
-      imageUrl: finalImage,
-      resolution,
-      deviceType,
-    });
+    setLoading(true);
+    try {
+      const newWallpaper = {
+        title,
+        category,
+        type,
+        imageUrl,
+        mediaType, 
+        authorAvatar: user?.photoURL || '',
+        createdAt: new Date().toISOString()
+      };
+      await onAdd(newWallpaper);
+      setTitle('');
+      setImageUrl('');
+      setMediaType('image');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 w-full max-w-lg relative shadow-2xl max-h-[90vh] overflow-y-auto">
-        <button 
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-800 p-2 rounded-full transition cursor-pointer"
-        >
-          ✕
-        </button>
-
-        <h2 className="text-xl font-bold text-white mb-4">Add New Wallpaper</h2>
-
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs p-3 rounded-xl mb-4">
-            {error}
-          </div>
-        )}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 relative shadow-2xl">
+        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white transition text-lg cursor-pointer">✕</button>
+        <h2 className="text-xl font-bold text-white mb-6">Add New Wallpaper</h2>
+        
+        {error && <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs p-3 rounded-xl mb-4">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Title</label>
-            <input 
-              type="text" 
-              value={title} 
-              onChange={(e) => setTitle(e.target.value)} 
-              placeholder="e.g. Cyberpunk Neon City"
-              required
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">Category</label>
-              <select 
-                value={category} 
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 cursor-pointer"
-              >
-                <option value="Anime">Anime</option>
-                <option value="Cars">Cars</option>
-                <option value="Gaming">Gaming</option>
-                <option value="AMOLED">AMOLED</option>
-                <option value="Aesthetic">Aesthetic</option>
-                <option value="Space">Space</option>
-                <option value="Minimal">Minimal</option>
-                <option value="Fantasy">Fantasy</option>
-                <option value="Nature">Nature</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">Target Device</label>
-              <select 
-                value={deviceType} 
-                onChange={(e) => setDeviceType(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 cursor-pointer"
-              >
-                <option value="Desktop">Desktop (PC)</option>
-                <option value="Mobile">Mobile (Phone)</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Option 1: Upload from Device */}
-          <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Upload Image from Device</label>
+            <label className="block text-xs font-medium text-slate-400 mb-1">Upload File (Image, MP4, WebM)</label>
             <input 
               type="file" 
-              accept="image/*"
+              accept="image/*,video/mp4,video/webm"
               onChange={handleFileChange}
-              className="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 file:cursor-pointer cursor-pointer bg-gray-800 border border-gray-700 rounded-xl"
+              className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer bg-slate-800 border border-slate-700 rounded-xl"
             />
           </div>
-
-          <div className="flex items-center my-2">
-            <div className="flex-grow border-t border-gray-800"></div>
-            <span className="px-3 text-gray-500 text-xs uppercase tracking-wider">or</span>
-            <div className="flex-grow border-t border-gray-800"></div>
-          </div>
-
-          {/* Option 2: Enter Image URL */}
-          <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Image URL</label>
-            <input 
-              type="url" 
-              value={imageUrl} 
-              onChange={handleUrlChange} 
-              placeholder="https://images.unsplash.com/..."
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          {/* Live Preview for either choice */}
-          {(imagePreview || imageUrl) && (
-            <div className="relative w-full h-32 bg-gray-800 rounded-xl overflow-hidden border border-gray-700">
-              <img 
-                src={imagePreview || imageUrl} 
-                alt="Preview" 
-                className="w-full h-full object-cover"
-                onError={(e) => { e.target.src = "https://via.placeholder.com/400?text=Invalid+Image+URL"; }}
-              />
-            </div>
+          
+          {imageUrl && mediaType === 'video' && (
+             <div className="w-full aspect-video bg-black rounded-xl overflow-hidden mt-2 border border-slate-800">
+               <video src={imageUrl} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+             </div>
+          )}
+          {imageUrl && mediaType === 'image' && (
+             <div className="w-full h-32 bg-black rounded-xl overflow-hidden mt-2 border border-slate-800">
+               <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+             </div>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Resolution</label>
-            <input 
-              type="text" 
-              value={resolution} 
-              onChange={(e) => setResolution(e.target.value)} 
-              placeholder="e.g. 4K, 1080p"
-              className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-            />
+            <label className="block text-xs font-medium text-slate-400 mb-1">Title</label>
+            <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:border-blue-500 outline-none" placeholder="e.g. Neon City" />
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-gray-800 hover:bg-gray-700 text-gray-300 px-5 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition shadow-lg cursor-pointer"
-            >
-              Upload Wallpaper
-            </button>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1">Category</label>
+              <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:border-blue-500 outline-none cursor-pointer">
+                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1">Device Type</label>
+              <select value={type} onChange={(e) => setType(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:border-blue-500 outline-none cursor-pointer">
+                <option value="Desktop">Desktop</option>
+                <option value="Mobile">Mobile</option>
+              </select>
+            </div>
           </div>
+
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl text-sm transition mt-4 disabled:opacity-50 cursor-pointer">
+            {loading ? 'Uploading...' : 'Publish Wallpaper'}
+          </button>
         </form>
       </div>
     </div>

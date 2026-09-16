@@ -1,88 +1,98 @@
 import React from 'react';
 
-export default function WallpaperModal({ wallpaper, onClose, isLiked, onLike, onFilterByUser }) {
-  if (!wallpaper) return null;
+export default function WallpaperModal({ wallpaper, isOpen, onClose, onFilterByUser }) {
+  if (!isOpen || !wallpaper) return null;
+
+  const isVideo = wallpaper.mediaType === 'video' || (typeof wallpaper.imageUrl === 'string' && wallpaper.imageUrl.match(/\.(mp4|webm)$/i));
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-gray-900 border border-gray-800 rounded-3xl max-w-4xl w-full overflow-hidden relative shadow-2xl flex flex-col md:flex-row">
+    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 md:p-8">
+      <div className="bg-slate-900 rounded-3xl overflow-hidden w-full max-w-5xl flex flex-col md:flex-row relative shadow-2xl border border-slate-800 max-h-[90vh]">
         
-        {/* Close Button */}
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 text-gray-400 hover:text-white bg-black/50 hover:bg-black p-2.5 rounded-full transition cursor-pointer"
+          className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/80 text-white w-10 h-10 rounded-full flex items-center justify-center transition cursor-pointer text-lg"
         >
           ✕
         </button>
 
-        {/* Wallpaper Image Preview */}
-        <div className="w-full md:w-3/5 bg-black flex items-center justify-center max-h-[80vh]">
-          <img 
-            src={wallpaper.imageUrl} 
-            alt={wallpaper.title} 
-            className="w-full h-full object-contain max-h-[80vh]"
-          />
+        {/* Media Viewer Section */}
+        <div className="w-full md:w-2/3 bg-black flex items-center justify-center min-h-[40vh] relative overflow-hidden">
+          {isVideo ? (
+            <video 
+              src={wallpaper.imageUrl} 
+              autoPlay 
+              loop 
+              muted 
+              playsInline 
+              controls
+              className="max-w-full max-h-[80vh] object-contain"
+            />
+          ) : (
+            <img 
+              src={wallpaper.imageUrl} 
+              alt={wallpaper.title} 
+              className="max-w-full max-h-[80vh] object-contain"
+            />
+          )}
         </div>
 
-        {/* Details & Uploader Info */}
-        <div className="w-full md:w-2/5 p-6 flex flex-col justify-between">
-          <div>
-            <span className="text-xs font-semibold px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full">
-              {wallpaper.category}
-            </span>
-            <h2 className="text-2xl font-bold text-white mt-3 mb-1">{wallpaper.title}</h2>
-            <p className="text-gray-400 text-xs mb-6">Resolution: {wallpaper.resolution || '4K'}</p>
-
-            {/* Creator / Uploader Profile Section */}
-            <div className="bg-gray-800/50 border border-gray-800 rounded-2xl p-4 flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
-                  {wallpaper.userName ? wallpaper.userName.charAt(0).toUpperCase() : 'Z'}
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400">Uploaded by</p>
-                  <p className="text-sm font-semibold text-white">{wallpaper.userName || 'Zyro Community'}</p>
-                </div>
-              </div>
-
-              {wallpaper.userId && (
-                <button
-                  onClick={() => {
-                    onFilterByUser(wallpaper.userId);
-                    onClose();
-                  }}
-                  className="text-xs bg-gray-800 hover:bg-gray-700 text-blue-400 font-medium px-3 py-2 rounded-xl transition cursor-pointer border border-gray-700"
-                >
-                  View Profile
-                </button>
-              )}
+        {/* Info Section */}
+        <div className="w-full md:w-1/3 p-6 md:p-8 flex flex-col bg-slate-900 overflow-y-auto">
+          <div 
+            className="flex items-center gap-3 mb-6 cursor-pointer hover:opacity-80 transition"
+            onClick={() => {
+              if (wallpaper.userId) {
+                onFilterByUser(wallpaper.userId);
+                onClose();
+              }
+            }}
+          >
+            <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 border border-slate-700 flex-shrink-0">
+               {wallpaper.authorAvatar ? (
+                 <img src={wallpaper.authorAvatar} alt="Author" className="w-full h-full object-cover" />
+               ) : (
+                 <div className="w-full h-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold">
+                   {wallpaper.userName ? wallpaper.userName.charAt(0).toUpperCase() : 'U'}
+                 </div>
+               )}
+            </div>
+            <div>
+              <p className="text-white font-bold">{wallpaper.userName || 'Zyro Official'}</p>
+              <p className="text-xs text-slate-400">Uploaded {new Date(wallpaper.createdAt || Date.now()).toLocaleDateString()}</p>
             </div>
           </div>
 
-          {/* Action Buttons (Like / Download) */}
-          <div className="flex gap-3 pt-4 border-t border-gray-800">
-            <button
-              onClick={() => onLike(wallpaper.id)}
-              className={`flex-1 py-3 rounded-xl font-medium text-sm transition flex items-center justify-center gap-2 cursor-pointer ${
-                isLiked 
-                  ? 'bg-red-500/10 text-red-500 border border-red-500/30' 
-                  : 'bg-gray-800 hover:bg-gray-700 text-white'
-              }`}
-            >
-              ♥ {isLiked ? 'Favorited' : 'Favorite'}
-            </button>
-            <a
-              href={wallpaper.imageUrl}
-              download={`${wallpaper.title}.jpg`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium text-sm transition text-center shadow-lg cursor-pointer"
-            >
-              Download
-            </a>
+          <h2 className="text-2xl font-bold text-white mb-2">{wallpaper.title}</h2>
+          
+          <div className="flex flex-wrap items-center gap-2 mb-8">
+            <span className="bg-blue-600/20 text-blue-400 px-3 py-1 rounded-lg text-xs font-semibold">
+              {wallpaper.category}
+            </span>
+            <span className="bg-slate-800 text-slate-300 px-3 py-1 rounded-lg text-xs font-semibold">
+              {wallpaper.type || wallpaper.deviceType || 'Desktop'}
+            </span>
+            {isVideo && (
+              <span className="bg-red-500/20 text-red-400 px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                Live Animated
+              </span>
+            )}
           </div>
 
+          <div className="mt-auto pt-4 space-y-3">
+            <a 
+              href={wallpaper.imageUrl} 
+              download={`Zyro_${wallpaper.title}`}
+              target="_blank"
+              rel="noreferrer"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+            >
+              📥 Download {isVideo ? 'Live Video' : 'Wallpaper'}
+            </a>
+          </div>
         </div>
+
       </div>
     </div>
   );

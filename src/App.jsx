@@ -21,22 +21,22 @@ import neonAvatarImg from './assets/Neon Anime Avatar_ Evolve in Blue.png';
 import stormboundImg from './assets/Stormbound Ember Halo.png';
 
 const defaultWallpapers = [
-  { id: 1, title: "Butterfly Anime Girl", category: "Anime", deviceType: "Desktop", imageUrl: typeof butterflyImg === 'object' ? butterflyImg.default : butterflyImg, resolution: "4K", downloads: 1240, likes: 342, userName: "Zyro Official" },
-  { id: 2, title: "Crimson Devil Pirate", category: "Anime", deviceType: "Desktop", imageUrl: typeof crimsonDevilImg === 'object' ? crimsonDevilImg.default : crimsonDevilImg, resolution: "4K", downloads: 850, likes: 215, userName: "Zyro Official" },
-  { id: 3, title: "Crimson Devil Supercar", category: "Cars", deviceType: "Desktop", imageUrl: typeof supercarImg === 'object' ? supercarImg.default : supercarImg, resolution: "4K", downloads: 2300, likes: 512, userName: "Zyro Official" },
-  { id: 4, title: "Devil BMW in Smoke", category: "Cars", deviceType: "Desktop", imageUrl: typeof devilBmwImg === 'object' ? devilBmwImg.default : devilBmwImg, resolution: "4K", downloads: 1420, likes: 389, userName: "Zyro Official" },
-  { id: 5, title: "Divine Ascent", category: "Fantasy", deviceType: "Desktop", imageUrl: typeof divineAscentImg === 'object' ? divineAscentImg.default : divineAscentImg, resolution: "4K", downloads: 930, likes: 178, userName: "Zyro Official" },
-  { id: 6, title: "Midnight GT-R Dreams", category: "Cars", deviceType: "Desktop", imageUrl: typeof midnightGtrImg === 'object' ? midnightGtrImg.default : midnightGtrImg, resolution: "4K", downloads: 3100, likes: 740, userName: "Zyro Official" },
-  { id: 7, title: "Misty Creeper Forest", category: "Nature", deviceType: "Mobile", imageUrl: typeof mistyCreeperImg === 'object' ? mistyCreeperImg.default : mistyCreeperImg, resolution: "4K", downloads: 640, likes: 120, userName: "Zyro Official" },
-  { id: 8, title: "Neon Anime Avatar", category: "Anime", deviceType: "Mobile", imageUrl: typeof neonAvatarImg === 'object' ? neonAvatarImg.default : neonAvatarImg, resolution: "4K", downloads: 1890, likes: 430, userName: "Zyro Official" },
-  { id: 9, title: "Stormbound Ember Halo", category: "Space", deviceType: "Desktop", imageUrl: typeof stormboundImg === 'object' ? stormboundImg.default : stormboundImg, resolution: "4K", downloads: 1150, likes: 290, userName: "Zyro Official" },
+  { id: 1, title: "Butterfly Anime Girl", category: "Anime", deviceType: "Desktop", mediaType: "image", imageUrl: typeof butterflyImg === 'object' ? butterflyImg.default : butterflyImg, resolution: "4K", downloads: 1240, likes: 342, userName: "Zyro Official" },
+  { id: 2, title: "Crimson Devil Pirate", category: "Anime", deviceType: "Desktop", mediaType: "image", imageUrl: typeof crimsonDevilImg === 'object' ? crimsonDevilImg.default : crimsonDevilImg, resolution: "4K", downloads: 850, likes: 215, userName: "Zyro Official" },
+  { id: 3, title: "Crimson Devil Supercar", category: "Cars", deviceType: "Desktop", mediaType: "image", imageUrl: typeof supercarImg === 'object' ? supercarImg.default : supercarImg, resolution: "4K", downloads: 2300, likes: 512, userName: "Zyro Official" },
+  { id: 4, title: "Devil BMW in Smoke", category: "Cars", deviceType: "Desktop", mediaType: "image", imageUrl: typeof devilBmwImg === 'object' ? devilBmwImg.default : devilBmwImg, resolution: "4K", downloads: 1420, likes: 389, userName: "Zyro Official" },
+  { id: 5, title: "Divine Ascent", category: "Fantasy", deviceType: "Desktop", mediaType: "image", imageUrl: typeof divineAscentImg === 'object' ? divineAscentImg.default : divineAscentImg, resolution: "4K", downloads: 930, likes: 178, userName: "Zyro Official" },
+  { id: 6, title: "Midnight GT-R Dreams", category: "Cars", deviceType: "Desktop", mediaType: "image", imageUrl: typeof midnightGtrImg === 'object' ? midnightGtrImg.default : midnightGtrImg, resolution: "4K", downloads: 3100, likes: 740, userName: "Zyro Official" },
+  { id: 7, title: "Misty Creeper Forest", category: "Nature", deviceType: "Mobile", mediaType: "image", imageUrl: typeof mistyCreeperImg === 'object' ? mistyCreeperImg.default : mistyCreeperImg, resolution: "4K", downloads: 640, likes: 120, userName: "Zyro Official" },
+  { id: 8, title: "Neon Anime Avatar", category: "Anime", deviceType: "Mobile", mediaType: "image", imageUrl: typeof neonAvatarImg === 'object' ? neonAvatarImg.default : neonAvatarImg, resolution: "4K", downloads: 1890, likes: 430, userName: "Zyro Official" },
+  { id: 9, title: "Stormbound Ember Halo", category: "Space", deviceType: "Desktop", mediaType: "image", imageUrl: typeof stormboundImg === 'object' ? stormboundImg.default : stormboundImg, resolution: "4K", downloads: 1150, likes: 290, userName: "Zyro Official" },
 ];
 
 export default function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [deviceFilter, setDeviceFilter] = useState("All"); // "All", "Desktop", "Mobile"
-  const [selectedUserId, setSelectedUserId] = useState(null); // Filter by uploader profile
+  const [deviceFilter, setDeviceFilter] = useState("All"); // "All", "Desktop", "Mobile", "Live"
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -45,7 +45,6 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [favorites, setFavorites] = useState([]);
 
-  // Load custom wallpapers from localStorage combined with default ones
   const [wallpapers, setWallpapers] = useState(() => {
     try {
       const saved = localStorage.getItem('zyro_custom_wallpapers');
@@ -81,7 +80,6 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Protected add wallpaper handler requiring user login & attaching metadata
   const handleAddWallpaper = (newWallpaper) => {
     if (!user) {
       setIsAddModalOpen(false);
@@ -138,6 +136,8 @@ export default function App() {
   };
 
   const filteredWallpapers = wallpapers.filter((wp) => {
+    const matchesSearch = wp.title.toLowerCase().includes(searchTerm.toLowerCase());
+    
     const matchesCategory = 
       selectedCategory === "All" ? true :
       selectedCategory === "Favorites" ? favorites.includes(wp.id) :
@@ -145,11 +145,17 @@ export default function App() {
 
     const matchesUser = selectedUserId ? wp.userId === selectedUserId : true;
     
-    const wpDevice = wp.deviceType || "Desktop";
-    const matchesDevice = deviceFilter === "All" ? true : wpDevice === deviceFilter;
+    // Check for "Live" videos vs Standard Devices
+    let matchesDevice = false;
+    if (deviceFilter === "All") {
+      matchesDevice = true;
+    } else if (deviceFilter === "Live") {
+      matchesDevice = wp.mediaType === 'video' || (typeof wp.imageUrl === 'string' && wp.imageUrl.match(/\.(mp4|webm)$/i));
+    } else {
+      const wpDevice = wp.deviceType || wp.type || "Desktop";
+      matchesDevice = wpDevice === deviceFilter;
+    }
 
-    const matchesSearch = wp.title.toLowerCase().includes(searchTerm.toLowerCase());
-    
     return matchesCategory && matchesUser && matchesDevice && matchesSearch;
   });
 
@@ -161,11 +167,8 @@ export default function App() {
         selectedCategory={selectedCategory}
         setSelectedCategory={(cat) => { setSelectedCategory(cat); setSelectedUserId(null); }}
         onOpenAddModal={() => {
-          if (!user) {
-            setIsLoginModalOpen(true);
-          } else {
-            setIsAddModalOpen(true);
-          }
+          if (!user) setIsLoginModalOpen(true);
+          else setIsAddModalOpen(true);
         }}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
@@ -173,7 +176,6 @@ export default function App() {
         onLogout={handleSignOut}
       />
       
-      {/* Active User Filter Banner if filtering by profile */}
       {selectedUserId && (
         <div className="bg-blue-600/10 border-b border-blue-500/20 px-4 py-2.5 text-center text-xs text-blue-400 flex items-center justify-center gap-3">
           <span>Showing wallpapers uploaded by user profile</span>
@@ -186,19 +188,19 @@ export default function App() {
         </div>
       )}
 
-      {/* Device Filter Bar */}
-      <div className="container mx-auto px-4 pt-4 flex items-center justify-center gap-2">
-        {["All", "Desktop", "Mobile"].map((device) => (
+      {/* Device & Media Filter Bar */}
+      <div className="container mx-auto px-4 pt-4 flex flex-wrap items-center justify-center gap-2">
+        {["All", "Desktop", "Mobile", "Live"].map((filter) => (
           <button
-            key={device}
-            onClick={() => setDeviceFilter(device)}
+            key={filter}
+            onClick={() => setDeviceFilter(filter)}
             className={`px-4 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer ${
-              deviceFilter === device
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'bg-gray-900 text-gray-400 hover:text-white hover:bg-gray-800 border border-gray-800'
+              deviceFilter === filter
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20 border border-blue-500'
+                : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
             }`}
           >
-            {device === "Desktop" ? "🖥️ Desktop" : device === "Mobile" ? "📱 Mobile" : "✨ All Devices"}
+            {filter === "Desktop" ? "🖥️ Desktop" : filter === "Mobile" ? "📱 Mobile" : filter === "Live" ? "🎬 Live" : "✨ All"}
           </button>
         ))}
       </div>
@@ -215,6 +217,7 @@ export default function App() {
       {selectedWallpaper && (
         <WallpaperModal 
           wallpaper={selectedWallpaper} 
+          isOpen={true}
           onClose={() => setSelectedWallpaper(null)}
           isLiked={favorites.includes(selectedWallpaper.id)}
           onLike={toggleFavorite}
@@ -227,8 +230,10 @@ export default function App() {
 
       {isAddModalOpen && (
         <AddWallpaperModal 
+          isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
           onAdd={handleAddWallpaper}
+          user={user}
         />
       )}
 
