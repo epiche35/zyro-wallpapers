@@ -21,8 +21,8 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 800000) { 
-        setError('Profile picture is too large. Please choose an image under 800KB.');
+      if (file.size > 2000000) { // Limit increased to 2MB
+        setError('Profile picture is too large. Please choose an image under 2MB.');
         return;
       }
       setError('');
@@ -131,7 +131,7 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
 
               <form onSubmit={handleUpdateProfile} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Profile Picture (Max ~800KB)</label>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Profile Picture (Max ~2MB)</label>
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-14 rounded-full overflow-hidden bg-slate-800 border border-slate-700 flex-shrink-0">
                       <img src={imagePreview || "https://via.placeholder.com/150"} alt="Avatar Preview" className="w-full h-full object-cover" />
