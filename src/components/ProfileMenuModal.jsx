@@ -8,7 +8,7 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
   const [email, setEmail] = useState(user?.email || '');
   const [newPassword, setNewPassword] = useState('');
   
-  // Retrieve saved avatar from localStorage to bypass Firebase limit
+  // Retrieve saved avatar from localStorage to bypass Firebase photoURL character limits
   const [imagePreview, setImagePreview] = useState(() => {
     return localStorage.getItem(`zyro_avatar_${user?.uid}`) || user?.photoURL || '';
   });
@@ -43,37 +43,68 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
     setError('');
     setLoading(true);
 
+    let profileUpdated = false;
+    let authErrorOccurred = false;
+
     try {
-      // 1. Save Base64 image to local browser storage
+      // 1. Save Base64 avatar to local browser storage
       if (imagePreview) {
         localStorage.setItem(`zyro_avatar_${user.uid}`, imagePreview);
+        profileUpdated = true;
       }
 
-      // 2. Explicitly pass photoURL as empty string to prevent Firebase string length rejection
-      await updateProfile(user, {
-        displayName: displayName,
-        photoURL: '' 
-      });
-
-      // 3. Update Email if changed
-      if (email && email !== user.email) {
-        await updateEmail(user, email);
+      // 2. Update Display Name in Firebase Auth (pass photoURL as '' to avoid Firebase string limit)
+      if (displayName !== user.displayName) {
+        await updateProfile(user, {
+          displayName: displayName,
+          photoURL: ''
+        });
+        profileUpdated = true;
       }
 
-      // 4. Update Password if provided
+      // 3. Update Email (only if modified by user)
+      if (email && email.trim() !== '' && email !== user.email) {
+        try {
+          await updateEmail(user, email);
+          profileUpdated = true;
+        } catch (err) {
+          if (err.code === 'auth/requires-recent-login') {
+            authErrorOccurred = true;
+          } else {
+            throw err;
+          }
+        }
+      }
+
+      // 4. Update Password (only if entered by user)
       if (newPassword && newPassword.trim() !== '') {
-        await updatePassword(user, newPassword);
+        try {
+          await updatePassword(user, newPassword);
+          profileUpdated = true;
+          setNewPassword('');
+        } catch (err) {
+          if (err.code === 'auth/requires-recent-login') {
+            authErrorOccurred = true;
+          } else {
+            throw err;
+          }
+        }
       }
 
-      setMessage('Profile updated successfully!');
-      setNewPassword('');
+      // Feedback handling
+      if (authErrorOccurred) {
+        if (profileUpdated) {
+          setMessage('Profile details saved! (Note: Email/Password changes require logging out & back in first due to Firebase security).');
+        } else {
+          setError('Security restriction: Please sign out and log back in to change your email or password.');
+        }
+      } else {
+        setMessage('Profile updated successfully!');
+      }
+
     } catch (err) {
       console.error('Update error:', err);
-      if (err.code === 'auth/requires-recent-login') {
-        setError('Security restriction: Please sign out and log back in to change password or email.');
-      } else {
-        setError(err.message || 'Failed to update profile.');
-      }
+      setError(err.message || 'Failed to update profile.');
     } finally {
       setLoading(false);
     }
@@ -83,6 +114,7 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-3xl relative shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
         
+        {/* Header */}
         <div className="p-6 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 border border-slate-700 flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0">
@@ -100,13 +132,16 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
           <button onClick={onClose} className="text-slate-400 hover:text-white bg-slate-800 p-2.5 rounded-full transition cursor-pointer">✕</button>
         </div>
 
+        {/* Tab Buttons */}
         <div className="flex border-b border-slate-800 px-6 bg-slate-900/50">
           <button onClick={() => { setActiveTab('uploads'); setMessage(''); setError(''); }} className={`py-3 px-4 text-xs font-semibold border-b-2 transition cursor-pointer ${activeTab === 'uploads' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white'}`}>🖼️ My Uploads ({userUploads.length})</button>
           <button onClick={() => { setActiveTab('settings'); setMessage(''); setError(''); }} className={`py-3 px-4 text-xs font-semibold border-b-2 transition cursor-pointer ${activeTab === 'settings' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-400 hover:text-white'}`}>⚙️ Account Settings</button>
         </div>
 
+        {/* Modal Body */}
         <div className="p-6 overflow-y-auto flex-1">
           
+          {/* TAB 1: UPLOADS */}
           {activeTab === 'uploads' && (
             <div>
               {userUploads.length === 0 ? (
@@ -134,6 +169,7 @@ export default function ProfileMenuModal({ user, isOpen, onClose, onSignOut, wal
             </div>
           )}
 
+          {/* TAB 2: SETTINGS */}
           {activeTab === 'settings' && (
             <div className="max-w-md mx-auto">
               {message && <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs p-3 rounded-xl mb-4">{message}</div>}
